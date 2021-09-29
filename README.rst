@@ -31,4 +31,4 @@ Detailed documentation is available at https://pylablib-cam-control.readthedocs.
 Related projects
 ~~~~~~~~~~~~~~~~~~
 
-Cam-control is built using `pylablib <https://github.com/AlexShkarin/pyLabLib>`__, a more generic library for experiment automation and data acquisition, which included lots of additional `devices <https://pylablib-cam-control.readthedocs.io/en/latest/devices/devices_root.html>`__ besides cameras.
+Cam-control is built using `pylablib <https://github.com/AlexShkarin/pyLabLib>`__, a more generic library for experiment automation and data acquisition, which included lots of additional `devices <https://pylablib.readthedocs.io/en/latest/devices/devices_root.html>`__ besides cameras.
