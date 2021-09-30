@@ -112,8 +112,8 @@ class FastMovingAverageFilter(base.IRingMultiFrameFilter):
     _class_caption="Moving average"
     _class_description="Averages a given number of consecutive frames into a single frame. Frames are averaged within a sliding window."
     def setup(self):
-        super().setup(buffer_size=20,process_incomplete=True)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size)
+        super().setup(process_incomplete=True)
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
@@ -137,8 +137,8 @@ class MovingAccumulatorFilter(base.IMultiFrameFilter):
     _class_caption="Moving accumulator"
     _class_description="Combine a given number of consecutive frames into a single frame using the given method. Frames are combined within a sliding window."
     def setup(self):
-        super().setup(buffer_size=20,process_incomplete=True)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size)
+        super().setup(process_incomplete=True)
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
         self.add_parameter("kind",label="Combination method",kind="select",options={"mean":"Mean","median":"Median","min":"Min","max":"Max","std":"Standard deviation"})
     def set_parameter(self, name, value):
@@ -187,8 +187,8 @@ class FastMovingAverageSubtractionFilter(base.IRingMultiFrameFilter):
     _class_description=("Averages two consecutive frame blocks into two individual frames and takes their difference. "
         "Similar to running background subtraction, but with some additional time averaging.")
     def setup(self):
-        super().setup(buffer_size=40)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size//2)
+        super().setup()
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
@@ -209,8 +209,8 @@ class TimeMapFilter(base.IMultiFrameFilter):
     _class_description=("Plots a time dependence of a line cut as a 2D map. "
     "A cut can be taken in either direction and, possibly, averaged over a band with the given width")
     def setup(self):
-        super().setup(buffer_size=20,process_incomplete=True)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size)
+        super().setup(process_incomplete=True)
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
         self.add_parameter("orientation",label="Orientation",kind="select",options={"rows":"Rows","cols":"Columns"})
         self.add_parameter("position",label="Position",kind="int",limit=(0,None))
@@ -259,8 +259,8 @@ class DifferenceMatrixFilter(base.IMultiFrameFilter):
     _class_caption="Difference matrix"
     _class_description="Plots a 2D map showing RMS differences between different frames."
     def setup(self):
-        super().setup(buffer_size=20,process_incomplete=True)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(2,None),default=self.buffer_size)
+        super().setup(process_incomplete=True)
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(2,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
     def set_parameter(self, name, value):
         super().set_parameter(name,value)

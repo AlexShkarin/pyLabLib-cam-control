@@ -267,6 +267,9 @@ class FilterThread(controller.QTaskThread):
         self.remove_filter()
         self.fctl=fctl
         self.fctl.setup()
+        for p in fctl.description.get("gui/parameters",[]):
+            if ("name" in p) and ("default" in p) and (not p.get("indicator",True)):
+                self.fctl.set_parameter(p["name"],p["default"])
         self.v["filter_desc"]=fctl.description
         self.single_frame=not fctl.description.get("receive_all_frames",False)
     def remove_filter(self):

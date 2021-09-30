@@ -99,8 +99,8 @@ class MovingAverageFilter(base.IMultiFrameFilter):
     _class_caption="Moving average"
     _class_description="Averages a given number of consecutive frames into a single frame. Frames are averaged within a sliding window."
     def setup(self):
-        super().setup(buffer_size=10,process_incomplete=True)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size)
+        super().setup(process_incomplete=True)
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
@@ -129,8 +129,8 @@ class MovingAverageSubtractionFilter(base.IMultiFrameFilter):
     _class_description=("Averages two consecutive frame blocks into two individual frames and takes their difference. "
         "Similar to running background subtraction, but with some additional time averaging.")
     def setup(self):
-        super().setup(buffer_size=20)
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size//2)
+        super().setup()
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
     def set_parameter(self, name, value):
         super().set_parameter(name,value)

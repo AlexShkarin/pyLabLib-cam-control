@@ -33,8 +33,8 @@ class TemplateMultiFrameFilter(base.IMultiFrameFilter):
     _class_caption="Template multi-frame filter"
     _class_description="This is a template multi-frame filter, which simply returns the average of all frames"
     def setup(self):
-        super().setup(buffer_size=10,process_incomplete=True) # set number of frames to 10 by default
-        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=self.buffer_size)
+        super().setup(process_incomplete=True)
+        self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
