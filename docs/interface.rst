@@ -105,7 +105,7 @@ Here the :ref:`saving <pipeline_saving>` parameters, such as path, format, and n
 - ``Pretrigger``: set up the :ref:`pretrigger <pipeline_saving_pretrigger>` buffer size
 - ``Save settings``: if checked, then in addition to the frame saves a text file containing all of the related information: camera settings, GUI state, frame counters, frame shape and data format, etc. Highly recommended to use.
 - ``Saving``: the main button which initiates and stops data streaming; while streaming, changing of any other saving parameters is not allowed
-- ``Snap``: pressing it saves a single :ref:`snapshot <pipeline_saving_snapshot>` image from the specified source (usually either ``Raw`` or ``Filter``); here one can also specify the resulting image format
+- ``Snap``: pressing it saves a single :ref:`snapshot <pipeline_saving_snapshot>` image from the specified source (usually either ``Standard`` or ``Filter``); here one can also specify the resulting image format
 - ``Event log``: it is possible to create an additional "Event log" corresponding to the data file, in which various events during the data acquisition are recorded. To record a new event, enter it into the edit box and press ``Log event`` button. The event is tagged by the global OS timestamp, time since the recording start, and the frame number. The event file is automatically created when the first message is added.
 
 
@@ -210,7 +210,7 @@ The top part of the ``Plugins`` tab controls the :ref:`saving trigger <advanced_
 - ``Limit number of videos``: if enabled, limits the total number of saved videos
 - ``Number of videos``: maximal number of saved videos; the indicator shows the number saved so far
 - ``Trigger mode``: the source of the trigger; can be ``Timer`` for periodic timed acquisition or ``Frame`` for a frame-triggered acquisition
-- ``Trigger frame source``: the source of the triggering frame, either ``Raw`` for the standard processing pipeline (including background subtraction) or ``Filter`` for the filter frame
+- ``Trigger frame source``: the source of the triggering frame, either ``Standard`` for the standard processing pipeline (including background subtraction) or ``Filter`` for the filter frame
 - ``Time period (s)``: for timer acquisition, the trigger period
 - ``Dead time (s)``: for frame trigger, the amount of dead time, i.e., the time after the trigger when the subsequent triggers are ignored. If the save mode is ``Full``, it is recommended that the period and the dead time are longer than the length of the single movie
 - ``Trigger threshold``: frame trigger threshold; the trigger is activated when any image pixel is above this threshold

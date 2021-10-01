@@ -97,7 +97,7 @@ class StandaloneFrame(container.QWidgetContainer):
             self.trace_plotter=self.add_to_layout(pyqtgraph.PlotWidget(self))
             self.trace_plotter.setMinimumSize(400,200)
             self.set_row_stretch(0,1)
-            image_tab=self.plots_tabs.add_tab("raw_frame","Raw frame",layout="hbox")
+            image_tab=self.plots_tabs.add_tab("standard_frame","Standard",layout="hbox")
             self.image_plotter=image_tab.add_to_layout(pll_widgets.ImagePlotterCombined(self))
             self.image_plotter.setup(name="image_plotter",min_size=(400,400),ctl_caption="Image settings")
             self.cam_ctl.add_child("plotter_area",self.image_plotter.plt,gui_values_path=False)
@@ -109,6 +109,7 @@ class StandaloneFrame(container.QWidgetContainer):
                 self.add_child("display_settings_table",self.display_settings_table,gui_values_path="disp",location="skip")
                 self.display_settings_table.setup(slowdown_thread=slowdown_thread)
                 self.cam_ctl.image_updated.connect(self.display_settings_table.on_new_frame)
+            self.image_plotter.plt.set_colormap("gray_sat")
         # Setup status and saving
         if not compact:
             with self.using_new_sublayout("status_saving","vbox"):

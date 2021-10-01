@@ -44,7 +44,7 @@ class GenericCameraCtl(container.QContainer):
         self.ctl.subscribe_sync(lambda *args: self.recv_parameters(),self.cam_thread,tags="status/connection",filt=lambda s,d,t,v: v=="opened")
         self.ctl.subscribe_sync(lambda src,tag,val: self.plot_control(*val),tags="image_plotter/control",limit_queue=-1)
         if self.resource_manager is not None:
-            self.resource_manager.cs.add_resource("frame/display","raw",caption="Raw",src=self.frame_src_thread,tag=self.frame_tag,frame=None)
+            self.resource_manager.cs.add_resource("frame/display","standard",caption="Standard",src=self.frame_src_thread,tag=self.frame_tag,frame=None)
             self.ctl.subscribe_sync(lambda *args: self.frames_sources_updates.emit(),srcs=self.resource_manager_thread,tags=["resource/added","resource/removed"])
         self.ctl.add_thread_method("toggle_saving",self.toggle_saving)
         self.ctl.add_thread_method("get_saving_parameters",lambda mode="full": self.c["savebox"].collect_parameters(mode))
@@ -128,7 +128,7 @@ class GenericCameraCtl(container.QContainer):
             sources=self.resource_manager.cs.list_resources("frame/display")
             return {n:v.get("caption",n) for n,v in sources.items()}
         else:
-            return {"raw":"Raw"}
+            return {"standard":"Standard"}
     def send_snap_frame(self, source=None):
         """Send a multicast with the source frame to the snap saver"""
         if self.resource_manager and source is not None:
@@ -237,7 +237,7 @@ class GenericCameraCtl(container.QContainer):
             self.image_updated.emit()
             self._last_shown_frame=frame
             if self.resource_manager:
-                self.resource_manager.cs.update_resource("frame/display","raw",frame=frame)
+                self.resource_manager.cs.update_resource("frame/display","standard",frame=frame)
     def plot_control(self, comm, val):
         """Process image plotting control messages (e.g., drawing commands)"""
         if "plotter_area" not in self.c:

@@ -357,6 +357,7 @@ class FilterPlugin(base.IPlugin):
             self.plot_tab.add_child("display_settings_table",self.display_settings_table,gui_values_path="disp",location=-1)
             self.display_settings_table.setup(slowdown_thread=self.extctls["slowdown"].name,period_update_tag=None)
             self.display_settings_table.params.vs["display_update_period"].connect(lambda v: self.ctl.ca.change_job_period("update_plots",v))
+        self.plot_tab.plt.set_colormap("hot_sat")
         self.filter_panel=self.gui.add_control_tab("ctl_tab",self.caption,kind=FilterPanel)
         self.filter_panel.setup(self,self.filter_captions,plotter=self.plot_tab)
         self.gui.control_tabs.currentChanged.connect(self._check_tab)

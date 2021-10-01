@@ -319,7 +319,7 @@ These requests initiate or stop data streaming to the drive:
   
   - *Request args*:
   
-    - ``"source"``: snapshot frame source; normally either ``"raw"`` (frame from the ``Raw`` image tab) or ``"filter.filt"`` (frame from the ``Filter`` image tab)
+    - ``"source"``: snapshot frame source; normally either ``"standard"`` (frame from the ``Standard`` image tab) or ``"filter.filt"`` (frame from the ``Filter`` image tab)
     - ``"path"``: save path
     - ``"format"``: file format; can be ``"raw"``, ``"tiff"``, or ``"bigtiff"``
     - ``"save_settings"``: determines whether the settings are saved
