@@ -471,7 +471,7 @@ class FrameSaveThread(controller.QTaskThread):
                     self._write_frames(flat_chunk,append=append)
                     self._write_frame_info(new_chunk,self._get_frame_info_path(),append=append)
                 except FrameWriteError as err:
-                    self.v["nsaved"]=err.saved
+                    self.v["saved"]=err.saved
                     self.save_stop()
                     self._save_queue.clear()
                     self.queue_empty=True
@@ -623,11 +623,11 @@ class FrameSaveThread(controller.QTaskThread):
                         preamble="\n\n"
                     else:
                         file_utils.retry_remove(path)
-                        preamble="# Timestamp\tElapsed\tFrame\tMessage\n"
-                preamble+="{:.3f}\t{:.3f}\t{:d}\t{}\n".format(self._start_time,0,self._first_frame_idx or 0,"Recording started")
+                preamble="Timestamp\tElapsed\tIndex\tSaved\tMessage\n"
+                preamble+="{:.3f}\t{:.3f}\t{:d}\t{:d}\t{}\n".format(self._start_time,0,self._first_frame_idx or 0,0,"Recording started")
             with open(path,"a") as f:
                 t=time.time()
-                line="{:.3f}\t{:.3f}\t{:d}\t{}\n".format(t,t-self._start_time,self._last_frame_idx or 0,msg)
+                line="{:.3f}\t{:.3f}\t{:d}\t{:d}\t{}\n".format(t,t-self._start_time,self._last_frame_idx or 0,max(self.v["saved"]-1,0),msg)
                 if preamble:
                     f.write(preamble)
                 f.write(line)
