@@ -120,7 +120,7 @@ class GenericCameraCtl(container.QContainer):
                     self.send_snap_frame(source=source or params["snap_display_source"])
                 else:
                     self.snap_saver.ca.save_stop()
-            self.recv_parameters(update={"status/saving":"in_progress"} if start else None)
+            self.recv_parameters(update={"status/saving":"in_progress"} if (start and mode=="full") else None)
     frames_sources_updates=Signal()
     def get_frame_sources(self):
         """Get a dictionary ``{name: caption}`` of all frame sources for the snap saving"""

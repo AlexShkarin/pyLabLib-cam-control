@@ -118,11 +118,12 @@ class StandaloneFrame(container.QWidgetContainer):
                 self._add_camstatus(status_box)
                 self._add_savestatus(status_box)
                 self.add_padding()
-                self._add_param_loading(self)
         # Setup control tab widget
-        self.control_tabs=self.add_child("control_tabs",container.QTabContainer(self))
-        self.control_tabs.setMinimumWidth(300 if compact else 270)
-        self.control_tabs.setup()
+        with self.using_new_sublayout("control_tabs_box","vbox"):
+            self.control_tabs=self.add_child("control_tabs",container.QTabContainer(self))
+            self.control_tabs.setMinimumWidth(300 if compact else 270)
+            self.control_tabs.setup()
+            self._add_param_loading(self)
         cam_tab=self.control_tabs.add_tab("cam_tab","Camera",no_margins=False)
         self.cam_settings_table=self.cam_kind.controller(self)
         cam_tab.add_group_box("cam_settings_box",caption="Camera settings",no_margins=False).add_to_layout(self.cam_settings_table)
@@ -137,7 +138,6 @@ class StandaloneFrame(container.QWidgetContainer):
             save_tab.add_spacer(20)
             self._add_savestatus(save_tab)
             save_tab.add_padding(stretch=1)
-            self._add_param_loading(save_tab)
         else:
             cam_tab.add_padding(stretch=1)
         proc_tab=self.control_tabs.add_tab("proc_tab","Processing",no_margins=False)

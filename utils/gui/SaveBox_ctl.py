@@ -28,15 +28,19 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.setup(add_indicator=False)
         # Setup saving settings
         default_path=os.path.expanduser("~\\Documents\\frames")
-        self.params.add_text_edit("path",label="File name",value=default_path,location=("next",0,1,3))
+        with self.params.using_new_sublayout("save_path","hbox",location=("next",0,1,3)):
+            self.params.add_text_edit("path",label="Path",value=default_path)
+        @controller.exsafe
         def browse_path():
             path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save camera data...",directory=self.v["path"])
             if path:
                 self.v["path"]=path
-        self.params.add_button("browse","Browse...",location=("next",1,1,1))
+        self.params.add_button("browse","Browse...",location=("next",2,1,1))
         self.params.vs["browse"].connect(browse_path)
-        self.params.add_check_box("make_folder",caption="Create separate folder",location=("next",0,1,"end"))
-        self.params.add_check_box("add_datetime",caption="Add date/time",location=("next",0,1,"end"))
+        with self.params.using_new_sublayout("path_checkboxes","hbox"):
+            self.params.add_check_box("make_folder",caption="Separate folder")
+            self.params.add_padding()
+            self.params.add_check_box("add_datetime",caption="Add date/time")
         with self.params.using_new_sublayout("name_conflict","hbox",location=("next",0,1,3)):
             self.params.add_combo_box("on_name_conflict",label="On duplicate name: ",
                 options=["Overwrite","Append","Rename"],index_values=["overwrite","append","rename"],value="rename")
@@ -58,9 +62,45 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.vs["pretrigger_enabled"].connect(update_pretrigger)
         self.params.add_button("pretrigger_clear","Clear pretrigger",location=("next",2,1,1))
         self.params.vs["pretrigger_clear"].connect(self.cam_ctl.clear_pretrigger)
-        self.params.add_check_box("save_settings",value=True,caption="Save settings",location=("next",0,1,3))
+        self.params.add_check_box("save_settings",value=True,caption="Save settings",location=(-1,0,1,2))
         self.params.add_toggle_button("saving","Saving",location=("next",0,1,3))
         self.params.vs["saving"].connect(lambda v: self.cam_ctl.toggle_saving(mode="full",start=v))
+        self.params.add_decoration_label("Event log message:",location=("next",0,1,3))
+        self.params.add_text_edit("event_msg",value="",location=("next",0,1,3))
+        self.params.add_button("log_event","Log event",location=("next",1,1,1))
+        self.params.vs["log_event"].connect(self.cam_ctl.write_event_log)
+        self.params.add_spacer(5)
+        with self.params.using_new_sublayout("snap_header","hbox"):
+            self.params.add_decoration_label("Snapshot:")
+            self.params.add_padding()
+            self.params.add_check_box("default_snap_path","Use main path")
+        with self.params.using_new_sublayout("snap_save_path","hbox"):
+            self.params.add_text_edit("snap_path",label="Path",value=default_path,location=("next",0,1,3))
+        @controller.exsafe
+        def browse_snap_path():
+            path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save snapshot...",directory=self.v["snap_path"])
+            if path:
+                self.v["snap_path"]=path
+        self.params.add_button("snap_browse","Browse...",location=("next",2,1,1))
+        self.params.vs["snap_browse"].connect(browse_snap_path)
+        with self.params.using_new_sublayout("snap_path_checkboxes","hbox"):
+            self.params.add_check_box("snap_make_folder",caption="Separate folder")
+            self.params.add_padding()
+            self.params.add_check_box("snap_add_datetime",caption="Add date/time")
+        @controller.exsafe
+        def update_snap_path():
+            default_path=self.v["default_snap_path"]
+            if default_path:
+                path,ext=os.path.splitext(self.v["path"])
+                if ext!=self._default_ext[self.v["format"]]:
+                    path=path+ext
+                self.v["snap_path"]=path+"_snapshot"
+                self.v["snap_make_folder"]=self.v["make_folder"]
+                self.v["snap_add_datetime"]=self.v["add_datetime"]
+            self.params.set_enabled(["snap_path","snap_browse","snap_make_folder","snap_add_datetime"],not default_path)
+        for p in ["path","make_folder","add_datetime","default_snap_path"]:
+            self.params.vs[p].connect(update_snap_path)
+        self.v["default_snap_path"]=True
         with self.params.using_new_sublayout("snap_saving","hbox",location=("next",0,1,3)):
             self.params.add_button("snap_displayed","Snap")
             self.params.vs["snap_displayed"].connect(lambda v: self.cam_ctl.toggle_saving(mode="snap",source=self.v["snap_display_source"]))
@@ -69,24 +109,23 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.cam_ctl.frames_sources_updates.connect(self.update_display_source_options)
             self.params.add_padding()
             self.params.add_decoration_label("as")
-            self.params.add_combo_box("snap_format",options=["Raw binary","TIFF"],index_values=["raw","tiff"])
-        self.params.add_decoration_label("Event log message:",location=("next",0,1,3))
-        self.params.add_text_edit("event_msg",value="",location=("next",0,1,3))
-        self.params.add_button("log_event","Log event",location=("next",1,1,1))
-        self.params.vs["log_event"].connect(self.cam_ctl.write_event_log)
+            self.params.add_combo_box("snap_format",options=["Raw binary","TIFF"],index_values=["raw","tiff"],value="tiff")
         self.setEnabled(False)
 
     # Build a dictionary of camera parameters from the controls
+    _default_ext={"raw":".bin","cam":".cam","tiff":".tiff","bigtiff":".btf"}
     _path_gens={"pfx":"{date}_{name}","sfx":"{name}_{date}","folder":"{date}/{name}"}
     def _expand_name(self, name, idx=None, add_datetime=False, as_folder=False):
-        if idx is not None:
-            name="{}{:03d}".format(name,idx)
         if add_datetime:
             pathgen_kind="folder" if as_folder else "file"
             pathgen=self.cam_ctl.settings.get(("interface/datetime_path",pathgen_kind),"sfx")
             pathgen=self._path_gens.get(pathgen,pathgen)
             date=datetime.datetime.now().strftime(r"%Y%m%d_%H%M%S")
             name=pathgen.format(name=name,date=date)
+            if idx is not None:
+                name="{}_{:03d}".format(name,idx)
+        elif idx is not None:
+            name="{}{:03d}".format(name,idx)
         return name
     def _is_name_taken(self, path, ext, split=False, as_folder=False):
         if as_folder:
@@ -111,28 +150,28 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         params["batch_size"]=self.v["batch_size"] if self.v["limit_frames"] else None
         params["format"]=self.v["snap_format" if mode=="snap" else "format"]
         if resolve_path:
-            add_datetime=self.v["add_datetime"]
-            make_folder=self.v["make_folder"]
-            fext={"raw":".bin","cam":".cam","tiff":".tiff","bigtiff":".btf"}[params["format"]]
+            use_snap_parameters=(mode=="snap" and not self.v["default_snap_path"])
+            add_datetime=self.v["snap_add_datetime" if use_snap_parameters else "add_datetime"]
+            make_folder=self.v["snap_make_folder" if use_snap_parameters else "make_folder"]
+            fext=self._default_ext[params["format"]]
+            path_kind="snap_path" if mode=="snap" else "path"
             if make_folder:
-                path=self.v["path"]
+                path=self.v[path_kind]
                 ext=fext
             else:
-                path,ext=os.path.splitext(self.v["path"])
+                path,ext=os.path.splitext(self.v[path_kind])
                 if not ext:
                     ext=fext
                 elif ext!=fext:
                     ext=ext+fext
             folder,name=os.path.split(path)
-            if mode=="snap":
-                name=name+"_snapshot"
             if mode=="snap" or self.v["on_name_conflict"]=="rename":
                 idx=None
                 iname=self._expand_name(name,idx,add_datetime=add_datetime,as_folder=make_folder)
                 split=self.v["do_filesplit"]
                 while self._is_name_taken(os.path.join(folder,iname),ext,split=split,as_folder=make_folder):
                     idx=0 if idx is None else idx+1
-                    iname=self._expand_name(name,idx)
+                    iname=self._expand_name(name,idx,add_datetime=add_datetime,as_folder=make_folder)
                 name=iname
             else:
                 name=self._expand_name(name)
@@ -180,6 +219,8 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.update_display_source_options()
         if "saving" in values:
             del values["saving"]
+        if "default_snap_path" in values: # make sure it is changed first to not affect other settings
+            self.v["default_snap_path"]=values["default_snap_path"]
         return super().set_all_values(values)
 
 
