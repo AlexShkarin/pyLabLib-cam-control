@@ -307,7 +307,7 @@ class PretriggerBuffer:
         """
         Get buffer status.
 
-        Return tuple ``(frames, skipped, nbytes, size)`` with, corresobondingly, number of frames in the buffer, number of skipped frames amongst them,
+        Return tuple ``(frames, skipped, nbytes, size)`` with, correspondingly, number of frames in the buffer, number of skipped frames amongst them,
         size of the buffer in bytes, and maximal buffer size.
         """ 
         last_frame_idx=None

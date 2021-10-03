@@ -393,7 +393,7 @@ class FilterPlugin(base.IPlugin):
         if data is not None and "frame" in data:
             self.plotter.plt.set_image(data["frame"])
             if self._update_image():
-                self.extctls["resource_manager"].cs.update_resource("frame/display",self.full_name,frame=data["frame"])
+                self.extctls["resource_manager"].csi.update_resource("frame/display",self.full_name,frame=data["frame"])
 
     def _collect_filters(self):
         fcls=find_filters(os.path.join("plugins","filters"),root=self.gui.settings["runtime/root_folder"])
