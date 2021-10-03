@@ -28,3 +28,4 @@ To install cam-control, download the latest version from `GitHub <https://github
    settings_file
    usecases
    troubleshooting
+   changelog

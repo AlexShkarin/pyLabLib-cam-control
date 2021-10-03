@@ -68,6 +68,7 @@ Image display
 
 The image control is based on `pyqtgraph <http://www.pyqtgraph.org/>`_ ``ImageView`` control, which is used for displaying the image and the intensity histogram. In addition, there are some controls to change the image appearance and to enable additional features:
 
+- ``Binning``, ``Background subtraction``, ``Filter``, etc.: quick overview of all processing steps for the displayed frame
 - ``Image size``: displays image size in pixels
 - ``Flip X``, ``Flip Y``, ``Transpose``: correspondingly, flips the image along the given axis, or transposes it (flips along the diagonal); note that these settings only affect display, and do not change the way images are saved
 - ``Normalize``: controls whether the image levels are automatically normalized to cover the full image range, or if they stay fixed
@@ -96,17 +97,21 @@ Saving control
 Here the :ref:`saving <pipeline_saving>` parameters, such as path, format, and number of frames to save, are controlled:
 
 - ``File name``: path for saving the frames. If the containing folder does not exist, it is created automatically; if the extension is not specified, it is added automatically. Note that if ``Add date/time`` is activated, the actual path will be somewhat different.
-- ``Create separate folder``: if activated, then the supplied path is treated as a folder, and all of the data is stored inside under standard names (``frames.bin`` or ``frames.tiff`` for main frames data, ``settings.dat`` for settings, etc.) This option allows for better data organizing when each dataset has multiple files (e.g., main data, settings, frame info, background, several split files).
+- ``Separate folder``: if activated, then the supplied path is treated as a folder, and all of the data is stored inside under standard names (``frames.bin`` or ``frames.tiff`` for main frames data, ``settings.dat`` for settings, etc.) This option allows for better data organizing when each dataset has multiple files (e.g., main data, settings, frame info, background, several split files).
 - ``Add date/time``: if activated, create a unique name by appending current date and time to the specified path. By default, the date and time are added as a suffix, but this behavior can be changed in the :ref:`settings file <settings_file_general>`.
 - ``On duplicate name``: determines what happens if the files with the specified name already exists; can be ``Rename`` (add a numeric suffix to make a new unique name), ``Overwrite`` (overwrite the existing data), or ``Append`` (append the existing data)
 - ``Format``: saving format; so far, only raw binary and Tiff are supported
 - ``Frames limit``: if activated, only save the given number of frames; otherwise, keep streaming data until saving is manually stopped
 - ``Filesplit``: if activated, saved frames are split into separate files of the specified size instead of forming a single large file; this is useful when continuously acquiring very large amounts of data to avoid creating huge files
 - ``Pretrigger``: set up the :ref:`pretrigger <pipeline_saving_pretrigger>` buffer size
+- ``Clear pretrigger``: clear the accumulated pretrigger buffer
 - ``Save settings``: if checked, then in addition to the frame saves a text file containing all of the related information: camera settings, GUI state, frame counters, frame shape and data format, etc. Highly recommended to use.
 - ``Saving``: the main button which initiates and stops data streaming; while streaming, changing of any other saving parameters is not allowed
-- ``Snap``: pressing it saves a single :ref:`snapshot <pipeline_saving_snapshot>` image from the specified source (usually either ``Standard`` or ``Filter``); here one can also specify the resulting image format
 - ``Event log``: it is possible to create an additional "Event log" corresponding to the data file, in which various events during the data acquisition are recorded. To record a new event, enter it into the edit box and press ``Log event`` button. The event is tagged by the global OS timestamp, time since the recording start, and the frame number. The event file is automatically created when the first message is added.
+- ``Snapshot``: :ref:`snapshot <pipeline_saving_snapshot>` saving parameters
+- ``Use main path``: if checked, snapshot image path will be the same as the main image path, just with ``_snapshot`` appended to the end; all of the modifying parameters (``Separate folder`` and ``Add date/time``) are also the same
+- ``Path``, ``Separate folder``, ``Add date/time``: same meaning as above, but applied to the snapshot saving; only active if ``Use main path`` is not checked.
+- ``Snap``: pressing it saves a single  image from the specified source (usually either ``Standard`` or ``Filter``) in the specified image format
 
 
 .. _interface_save_status:

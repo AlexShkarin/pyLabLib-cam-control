@@ -104,7 +104,7 @@ Many high-speed cameras can generate data faster than it can be saved (about 60 
 Snapshot saving
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In addition to streaming complete data, there is an option to save the data which is currently displayed. This is done through a separate path, which is independent from the main saving routine; hence, it can be done during ongoing data streaming (albeit the name can not be changed in this case). Note that, like the standard save, the snapshot also stores all of the additional settings data, but not the frame info or the background.
+In addition to streaming complete data, there is an option to save the data which is currently displayed. This is done through a separate path, which is independent from the main saving routine; hence, it can be done during ongoing data streaming. Note that, like the standard save, the snapshot also stores all of the additional settings data, but not the frame info or the background.
 
 
 .. _pipeline_background_subtraction:
