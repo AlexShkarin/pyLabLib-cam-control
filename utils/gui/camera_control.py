@@ -237,7 +237,7 @@ class GenericCameraCtl(container.QContainer):
             self.image_updated.emit()
             self._last_shown_frame=frame
             if self.resource_manager:
-                self.resource_manager.cs.update_resource("frame/display","standard",frame=frame)
+                self.resource_manager.csi.update_resource("frame/display","standard",frame=frame)
     def plot_control(self, comm, val):
         """Process image plotting control messages (e.g., drawing commands)"""
         if "plotter_area" not in self.c:

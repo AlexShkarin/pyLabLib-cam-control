@@ -382,6 +382,8 @@ class FilterPlugin(base.IPlugin):
         if self.plotter.plt.update_image(update_controls=True):
             self.proc_indicator.update_indicators()
             self.display_settings_table.on_new_frame()
+            return True
+        return False
     def _get_filter_state(self):
         current_filter=self.filter_panel.current_filter
         if current_filter is not None and self.filter_panel.v["enabled"]:
