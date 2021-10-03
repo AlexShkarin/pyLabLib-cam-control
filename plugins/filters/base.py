@@ -24,6 +24,8 @@ class IFrameFilter:
     _class_description=None  # longer class description
     def __init__(self):
         self.description={"receive_all_frames":False,"gui/parameters":[]}
+        if self._class_caption is not None:
+            self.description["caption"]=self._class_caption
         if self._class_description is not None:
             self.description["description"]=self._class_description
         self.p={}

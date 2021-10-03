@@ -12,9 +12,7 @@ import sys
 
 
 from .filters.base import IFrameFilter
-from utils.gui import DisplaySettings_ctl
-
-import traceback
+from utils.gui import DisplaySettings_ctl, ProcessingIndicator_ctl
 
 
 
@@ -348,18 +346,25 @@ class FilterPlugin(base.IPlugin):
             caption=self.caption,src=self.filter_thread.name,tag=self.filter_thread.tag_out,frame=None)
         self.ctl.add_job("update_plots",self.update_plots,0.1)
     def setup_gui(self):
-        self.plot_tab=self.gui.add_plot_tab("plt_tab",self.caption,ctl_caption="Image settings")
-        self.plot_tab.w["minlim"].set_formatter(".02f")
-        self.plot_tab.w["maxlim"].set_formatter(".02f")
-        self.plot_tab.v["normalize"]=True
-        with self.plot_tab.using_layout("sidebar"):
-            self.display_settings_table=DisplaySettings_ctl.DisplaySettings_GUI(self.plot_tab)
-            self.plot_tab.add_child("display_settings_table",self.display_settings_table,gui_values_path="disp",location=-1)
+        self.plot_tab=self.gui.add_plot_tab("plt_tab",self.caption,kind="empty")
+        self.proc_indicator=self.plot_tab.add_child("processing_indicator",ProcessingIndicator_ctl.ProcessingIndicator_GUI(self.plot_tab),gui_values_path="procind")
+        self.proc_indicator.setup([
+                ("binning",ProcessingIndicator_ctl.binning_item(self.extctls["preprocessor"].name)),
+                ("filter",("Filter",self._get_filter_state))],update=False)
+        self.plotter=self.plot_tab.add_to_layout(widgets.ImagePlotterCombined(self.plot_tab))
+        self.plotter.setup(name="image_plotter",ctl_caption="Image settings")
+        self.plotter.w["minlim"].set_formatter(".02f")
+        self.plotter.w["maxlim"].set_formatter(".02f")
+        self.plotter.v["normalize"]=True
+        with self.plotter.using_layout("sidebar"):
+            self.display_settings_table=DisplaySettings_ctl.DisplaySettings_GUI(self.plotter)
+            self.plotter.add_child("display_settings_table",self.display_settings_table,gui_values_path="disp",location=-1)
             self.display_settings_table.setup(slowdown_thread=self.extctls["slowdown"].name,period_update_tag=None)
             self.display_settings_table.params.vs["display_update_period"].connect(lambda v: self.ctl.ca.change_job_period("update_plots",v))
-        self.plot_tab.plt.set_colormap("hot_sat")
+        self.plotter.plt.set_colormap("hot_sat")
         self.filter_panel=self.gui.add_control_tab("ctl_tab",self.caption,kind=FilterPanel)
-        self.filter_panel.setup(self,self.filter_captions,plotter=self.plot_tab)
+        self.filter_panel.setup(self,self.filter_captions,plotter=self.plotter)
+        self.proc_indicator.update_indicators()
         self.gui.control_tabs.currentChanged.connect(self._check_tab)
     @controller.exsafe
     def _check_tab(self, index):
@@ -368,16 +373,25 @@ class FilterPlugin(base.IPlugin):
     def cleanup(self):
         self.unload_filter()
         return super().cleanup()
+    def set_all_values(self, values):
+        super().set_all_values(values)
+        self.proc_indicator.update_indicators()
 
     @controller.call_in_gui_thread
     def _update_image(self):
-        self.plot_tab.plt.update_image(update_controls=True)
-        self.display_settings_table.on_new_frame()
+        if self.plotter.plt.update_image(update_controls=True):
+            self.proc_indicator.update_indicators()
+            self.display_settings_table.on_new_frame()
+    def _get_filter_state(self):
+        current_filter=self.filter_panel.current_filter
+        if current_filter is not None and self.filter_panel.v["enabled"]:
+            return current_filter[1]["caption"]
+        return None
     def update_plots(self):
         """Update plots"""
         data=self.filter_thread.cs.get_new_data()
         if data is not None and "frame" in data:
-            self.plot_tab.plt.set_image(data["frame"])
+            self.plotter.plt.set_image(data["frame"])
             if self._update_image():
                 self.extctls["resource_manager"].cs.update_resource("frame/display",self.full_name,frame=data["frame"])
 

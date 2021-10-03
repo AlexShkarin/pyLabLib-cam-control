@@ -35,7 +35,7 @@ import datetime
 import collections
 import threading
 
-from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl
+from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
 from utils import services, devthread
 import plugins
@@ -97,7 +97,12 @@ class StandaloneFrame(container.QWidgetContainer):
             self.trace_plotter=self.add_to_layout(pyqtgraph.PlotWidget(self))
             self.trace_plotter.setMinimumSize(400,200)
             self.set_row_stretch(0,1)
-            image_tab=self.plots_tabs.add_tab("standard_frame","Standard",layout="hbox")
+            image_tab=self.plots_tabs.add_tab("standard_frame","Standard",layout="vbox")
+            self.image_proc_indicator=image_tab.add_child("processing_indicator",ProcessingIndicator_ctl.ProcessingIndicator_GUI(self),gui_values_path="procind")
+            self.image_proc_indicator.setup([
+                    ("binning",ProcessingIndicator_ctl.binning_item(preprocess_thread)),
+                    ("background",ProcessingIndicator_ctl.background_item(process_thread))])
+            self.cam_ctl.image_updated.connect(self.image_proc_indicator.update_indicators)
             self.image_plotter=image_tab.add_to_layout(pll_widgets.ImagePlotterCombined(self))
             self.image_plotter.setup(name="image_plotter",min_size=(400,400),ctl_caption="Image settings")
             self.cam_ctl.add_child("plotter_area",self.image_plotter.plt,gui_values_path=False)
@@ -342,7 +347,8 @@ class StandaloneFrame(container.QWidgetContainer):
         if "plugins" in values:
             self._plugin_parameters=values.detach("plugins")
             self._apply_plugin_parameters()
-        return super().set_all_values(values)
+        super().set_all_values(values)
+        self.image_proc_indicator.update_indicators()
 
     def load_settings(self, path=None, scope="all", cam_apply=False):
         if path is None:
