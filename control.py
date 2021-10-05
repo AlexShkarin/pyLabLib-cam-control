@@ -56,7 +56,7 @@ sys.stdout=StreamLogger("logout.txt",sys.stdout)
 
 
 
-version="2.0.0"
+version="2.0.1"
 _defaults_filename="defaults.cfg"
 
 cam_thread="camera"
