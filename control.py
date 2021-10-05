@@ -16,8 +16,9 @@
 import os
 import sys
 if __name__=="__main__":
-    os.chdir(os.path.join(".",os.path.split(sys.argv[0])[0]))
-    sys.path.append(".")  # set current folder to the file location and add it to the search path
+    startdir=os.path.abspath(os.getcwd())
+    os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+    sys.path.append(os.path.abspath("."))  # set current folder to the file location and add it to the search path
 
 from pylablib.core.thread import controller, synchronizing
 from pylablib.core.gui.widgets import container, param_table
@@ -560,3 +561,4 @@ if __name__=="__main__":
                 gui.started.connect(start_select_form)
             # Start the GUI event loop
             app.exec_()
+    os.chdir(startdir)
