@@ -133,7 +133,7 @@ class ChannelAccumulator(controller.QTaskThread):
             self.subscribe_commsync(callback,srcs=src,tags=tag,dsts="any",limit_queue=10)
     def select_source(self, name):
         """Select a source with a given name"""
-        if self.current_source!=name:
+        if self.current_source!=name and name in self.sources:
             self.reset()
             self.cnt=stream_manager.StreamIDCounter()
             self.current_source=name

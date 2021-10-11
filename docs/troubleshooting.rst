@@ -28,6 +28,11 @@ Troubleshooting
   - Selected display update period (selected under the plot parameters) is too large. 
   - By default, the camera is polled for new frames every 50ms, so the frame rate is limited by 20 FPS. To increase it, you can specify the ``loop/min_poll_period`` parameter the :ref:`settings file <settings_file_camera>`.
 
+- **Acquisition is frozen**
+  - Acquisition is still being set up, which can take up to several seconds in some cases. This can be confirmed by ``Acquisition`` camera status saying ``Setting up...``.
+  - Camera buffer overflow on Andor SDK3 cameras (e.g., Zyla) can sometimes lead to such behavior. Reduce the data transfer rate using smaller frame rate, smaller ROI or larger binning, and then restart the acquisition.
+  - Some NI IMAQ frame grabbers can freeze if the camera data transfer rate is too high (~200Mb/s). In this case it will freeze the acquisition shortly after start. This can be confirmed by the disagreement between the expected frame rate from the ``Frame period`` indicator and the actual frame rate from the ``FPS`` camera status. If this is the case, reduce the data transfer rate using smaller frame rate, smaller ROI or larger binning, and then restart the acquisition.
+
 - **Missing frames are reported after saving**
 
   - Acquisition can not deal with high data or frame rate. Check if the :ref:`frame buffer <interface_camera_status>` is full or constantly increasing. If so, reduce the frame rate or frame size.

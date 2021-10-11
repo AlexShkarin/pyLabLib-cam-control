@@ -46,13 +46,13 @@ In rare cases you might also need to install Microsoft Visual C++ Redistributabl
 Specifying camera files
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cameras using NI-IMAQ frame grabbers also need the correct ``.icd`` camera file for the connected camera, which describes the communication protocol details, sensor size, possible bit depths, etc. Some of the common cameras are already provided when you install Vision Acquisition Software, others need to be obtained from the manufacturer. To specify them, follow the following steps:
+Cameras using NI-IMAQ frame grabbers also need the correct ``.icd`` camera file for the connected camera, which describes the communication protocol details, sensor size, possible bit depths, etc. Some of the common camera files are already provided when you install Vision Acquisition Software, others need to be obtained from the manufacturer. To specify them, follow the following steps:
 
 1) If you are using a manufacturer-provided file, copy it into the NI-IMAQ camera file storage. By default it is located at ``C:\Users\Public\Documents\National Instruments\NI-IMAQ\Data`` (the folder should already exist and have many ``.icd`` files).
 2) Run NI MAX, and there find the camera entry in ``Devices and Interfaces`` -> ``NI-IMAQ Devices`` -> ``img<n>: <Frame grabber name>`` (e.g., ``img0: NI PCIe-1433``) -> ``Channel <n>`` (0 for single-channel frame grabbers).
 3) Right-click on the camera entry and there select ``Camera`` -> ``<Manufacturer>`` -> ``<Camera model corresponding to the file>``.
 
-PhotonFocus provides camera files with PFRemote, and they can be found in ``<Photon Focus folder>\PFRemote\fg_files``. There are several files with names like ``pfFg_ni_2tap_8bit.icd``, which should be selected based on the desired bit depth (usually 12 bit is preferable, if it is available for your camera) and the number of CameraLink taps (specified in the technical specification found in the camera manual; e.g., MV1-D1024E-160-CL has 2 taps). After specifying the file the file, you need to also specify the camera pixel depth using PFRemote. The correct setting is located at ``Data Output`` -> ``Output Mode`` -> ``Resolution``.
+PhotonFocus provides camera files with PFRemote, and they can be found in ``<Photon Focus folder>\PFRemote\fg_files``. There are several files with names like ``pfFg_ni_2tap_8bit.icd``, which should be selected based on the desired bit depth (usually 12 bit is preferable, if it is available for your camera) and the number of CameraLink taps (specified in the technical specification found in the camera manual; e.g., MV1-D1024E-160-CL has 2 taps). After specifying the file, you need to also specify the camera pixel depth using PFRemote. The correct setting is located at ``Data Output`` -> ``Output Mode`` -> ``Resolution``.
 
 
 .. _overview_layout:
