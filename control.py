@@ -351,7 +351,7 @@ class StandaloneFrame(container.QWidgetContainer):
         super().set_all_values(values)
         self.image_proc_indicator.update_indicators()
 
-    def load_settings(self, path=None, scope="all", cam_apply=False):
+    def load_settings(self, path=None, missing_warning=True, scope="all", cam_apply=False):
         if path is None:
             path=_defaults_filename
         if os.path.exists(path):
@@ -369,7 +369,7 @@ class StandaloneFrame(container.QWidgetContainer):
                     warn_msg="settings file camera ({}) is different from the current camera ({})".format(cam,self.cam_name)
                 else:
                     warn_msg=None
-                if warn_msg is not None:
+                if warn_msg is not None and not missing_warning:
                     result=QtWidgets.QMessageBox.warning(self,"Incompatible settings format","Warning: {}; load anyway?".format(warn_msg),QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
                     if result==QtWidgets.QMessageBox.No:
                         return
@@ -377,7 +377,8 @@ class StandaloneFrame(container.QWidgetContainer):
             elif self.cam_name in settings:
                 settings=settings[self.cam_name]
             else:
-                QtWidgets.QMessageBox.warning(self,"Missing settings in the file","Warning: either not a settings file, or contains settings for a different camera",QtWidgets.QMessageBox.Ok)
+                if not missing_warning:
+                    QtWidgets.QMessageBox.warning(self,"Missing settings in the file","Warning: either loading not a settings file, or it contains settings for different cameras",QtWidgets.QMessageBox.Ok)
                 settings={}
             if scope=="gui" and "cam/cam" in settings:
                 del settings["cam/cam"]
@@ -402,7 +403,7 @@ class StandaloneFrame(container.QWidgetContainer):
     def start(self):
         self._sync_plugins()
         controller.sync_controller(cam_thread)
-        self.load_settings()
+        self.load_settings(missing_warning=True)
         super().start()
         self._notify_plugins()
     @controller.exsafeSlot()

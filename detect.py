@@ -288,28 +288,28 @@ def detect_PCO(verbose=False):
             pass
     return cameras
 
-def detect_uc480(verbose=False):
-    if verbose: print("Searching for Thorlabs uc480 cameras")
+def detect_uc480(verbose=False, backend="uc480"):
+    if verbose: print("Searching for {} cameras".format("Thorlabs uc480" if backend=="uc480" else "IDS uEye"))
     cameras=dictionary.Dictionary()
     try:
-        cam_infos=uc480.list_cameras()
+        cam_infos=uc480.list_cameras(backend=backend)
     except (uc480.uc480Error, OSError):
-        if verbose: print("Error loading or running the uc480 library: required software (ThorCam) must be missing\n")
+        if verbose: print("Error loading or running {} library: required software ({}) must be missing\n".format(backend,("ThorCam" if backend=="uc480" else "IDS uEye")))
         return cameras
     cam_num=len(cam_infos)
     if not cam_num:
-        if verbose: print("Found no uc480 cameras\n")
+        if verbose: print("Found no {} cameras\n".format(backend))
         return cameras
-    if verbose: print("Found {} uc480 camera{}".format(cam_num,"s" if cam_num>1 else ""))
+    if verbose: print("Found {} {} camera{}".format(cam_num,backend,"s" if cam_num>1 else ""))
     for c in cam_infos:
         idx=c.cam_id
         dev_idx=c.dev_id
         sn=c.serial_number
-        if verbose: print("Checking uc480 camera dev_idx={}, cam_idx={}".format(dev_idx,idx))
+        if verbose: print("Checking {} camera dev_idx={}, cam_idx={}".format(backend,dev_idx,idx))
         if verbose: print("\tModel {}, serial {}".format(c.model,sn))
-        cam_desc=dictionary.Dictionary({"params/idx":idx,"params/dev_idx":dev_idx,"params/sn":sn,"kind":"UC480"})
+        cam_desc=dictionary.Dictionary({"params/idx":idx,"params/dev_idx":dev_idx,"params/sn":sn,"params/backend":backend,"kind":"UC480"})
         cam_desc["display_name"]="{} {}".format(c.model,c.serial_number)
-        cam_name="uc480_{}".format(idx)
+        cam_name="{}_{}".format(backend,idx)
         cameras[cam_name]=cam_desc
         if verbose: print_added_camera(cam_name,cam_desc)
     return cameras
@@ -341,14 +341,15 @@ def detect_ThorlabsTLCam(verbose=False):
 
 def detect_all(verbose=False):
     cams=dictionary.Dictionary()
-    cams.merge(detect_AndorSDK2(verbose=verbose),"cameras") #
-    cams.merge(detect_AndorSDK3(verbose=verbose),"cameras") #
-    cams.merge(detect_DCAM(verbose=verbose),"cameras") #
+    cams.merge(detect_AndorSDK2(verbose=verbose),"cameras")
+    cams.merge(detect_AndorSDK3(verbose=verbose),"cameras")
+    cams.merge(detect_DCAM(verbose=verbose),"cameras")
     cams.merge(detect_IMAQdx(verbose=verbose),"cameras")
-    cams.merge(detect_PhotonFocus(verbose=verbose),"cameras") #
+    cams.merge(detect_PhotonFocus(verbose=verbose),"cameras")
     cams.merge(detect_PCO(verbose=verbose),"cameras")
-    cams.merge(detect_uc480(verbose=verbose),"cameras") #
-    cams.merge(detect_ThorlabsTLCam(verbose=verbose),"cameras") #
+    cams.merge(detect_uc480(verbose=verbose,backend="uc480"),"cameras")
+    cams.merge(detect_uc480(verbose=verbose,backend="ueye"),"cameras")
+    cams.merge(detect_ThorlabsTLCam(verbose=verbose),"cameras")
     if "cameras" in cams:
         for c in cams["cameras"]:
             if "display_name" not in cams["cameras",c]:
