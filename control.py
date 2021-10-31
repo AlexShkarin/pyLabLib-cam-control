@@ -403,7 +403,7 @@ class StandaloneFrame(container.QWidgetContainer):
     def start(self):
         self._sync_plugins()
         controller.sync_controller(cam_thread)
-        self.load_settings(missing_warning=True)
+        self.load_settings(missing_warning=False)
         super().start()
         self._notify_plugins()
     @controller.exsafeSlot()
@@ -421,6 +421,7 @@ class CamSelectFrame(param_table.ParamTable):
     def setup(self, settings):
         super().setup(name="camera_select",add_indicator=False)
         self.setMinimumWidth(300)
+        self.setWindowTitle("Camera select...")
         self.selected=False # prevents double-call on multiple clicks
         cameras=settings["cameras"]
         cam_ids=list(cameras)

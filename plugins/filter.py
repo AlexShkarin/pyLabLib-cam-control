@@ -379,7 +379,7 @@ class FilterPlugin(base.IPlugin):
 
     @controller.call_in_gui_thread
     def _update_image(self):
-        if self.plotter.plt.update_image(update_controls=True):
+        if self.plotter.plt.update_image():
             self.proc_indicator.update_indicators()
             self.display_settings_table.on_new_frame()
             return True

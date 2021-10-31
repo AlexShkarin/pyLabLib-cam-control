@@ -233,7 +233,7 @@ class GenericCameraCtl(container.QContainer):
             binning=(max(frame.shape)-1)//max_size+1
             self.c["plotter_area"].set_binning(binning,binning,bin_mode,update_image=False)
         self.c["plotter_area"].set_image(frame)
-        if self.c["plotter_area"].update_image(update_controls=True):
+        if self.c["plotter_area"].update_image():
             self.image_updated.emit()
             self._last_shown_frame=frame
             if self.resource_manager:
