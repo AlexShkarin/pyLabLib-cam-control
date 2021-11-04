@@ -279,7 +279,7 @@ class SaveStatus_GUI(param_table.StatusTable):
                 self._finishing_saving_time.trigger(restart=False)
             else:
                 self._finishing_saving_time.stop()
-            self.w["saving"].setStyleSheet("background: gold" if self._finishing_saving_time.passed() else "")
+            self.w["saving"].setStyleSheet("background: gold; color: black" if self._finishing_saving_time.passed() else "")
         if "frames/status_line_check" in params:
             slc=params["frames/status_line_check"]
             slc_ok=slc in {"off","na","none"}

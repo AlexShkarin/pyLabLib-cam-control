@@ -140,7 +140,7 @@ class FilterPanel(widgets.QFrameContainer):
         self.filter_status_table.set_all_values(values)
         if self.isVisible() and self.plotter is not None and not self.plotter.isVisible():
             self.params.v["filter_tab_label"]="Currently displaying a non-filter tab"
-            self.params.w["filter_tab_label"].setStyleSheet("background: gold")
+            self.params.w["filter_tab_label"].setStyleSheet("background: gold; color: black")
         else:
             self.params.v["filter_tab_label"]=""
             self.params.w["filter_tab_label"].setStyleSheet("")

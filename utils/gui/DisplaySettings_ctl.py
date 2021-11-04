@@ -66,7 +66,7 @@ class DisplaySettings_GUI(container.QGroupBoxContainer):
             self._last_fps_cnt=0
         if self.frame_slowdown is not None and self.frame_slowdown.v["enabled"]:
             self.v["slowdown_enabled"]="slowdown"
-            self.params.w["slowdown_enabled"].setStyleSheet("background: gold; font-weight: bold")
+            self.params.w["slowdown_enabled"].setStyleSheet("background: gold; font-weight: bold; color: black")
         else:
             self.v["slowdown_enabled"]=""
             self.params.w["slowdown_enabled"].setStyleSheet("")
