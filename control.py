@@ -458,7 +458,8 @@ camera_kinds={
     "PhotonFocusLAN": TCameraKind(devthread.EthernetPhotonFocusIMAQdxCameraThread, def_controller, def_status),
     "PhotonFocusIMAQ": TCameraKind(devthread.IMAQPhotonFocusCameraThread, GenericCamera_ctl.PhotonFocusIMAQCameraSettings_GUI, GenericCamera_ctl.PhotonFocusIMAQCameraStatus_GUI),
     "PhotonFocusSiSo": TCameraKind(devthread.SiliconSoftwarePhotonFocusCameraThread, GenericCamera_ctl.PhotonFocusSiliconSoftwareCameraSettings_GUI, GenericCamera_ctl.PhotonFocusSiliconSoftwareCameraStatus_GUI),
-    "PCOSC2": TCameraKind(devthread.PCOCameraThread, GenericCamera_ctl.PCOGenericCameraSettings_GUI, def_status),
+    "PCOSC2": TCameraKind(devthread.PCOCameraThread, GenericCamera_ctl.PCOCameraSettings_GUI, def_status),
+    "Picam": TCameraKind(devthread.PicamCameraThread, GenericCamera_ctl.PicamCameraSettings_GUI, def_status),
     "UC480": TCameraKind(devthread.UC480CameraThread, GenericCamera_ctl.UC480CameraSettings_GUI, GenericCamera_ctl.UC480CameraStatus_GUI),
     "ThorlabsTLCam": TCameraKind(devthread.ThorlabsTLCameraThread, GenericCamera_ctl.ThorlabsTLCameraSettings_GUI, def_status),
 }

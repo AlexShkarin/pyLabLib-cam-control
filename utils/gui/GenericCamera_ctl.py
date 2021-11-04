@@ -420,7 +420,7 @@ class PhotonFocusSiliconSoftwareCameraSettings_GUI(PhotonFocusCameraSettings_GUI
     """
 
 
-class PCOGenericCameraSettings_GUI(GenericCameraSettings_GUI):
+class PCOCameraSettings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"
     _frame_period_kind="value"
     def setup_settings_tables(self):
@@ -436,6 +436,10 @@ class PCOGenericCameraSettings_GUI(GenericCameraSettings_GUI):
         super().show_parameters(params)
         if "pixel_rate" in params and "all_pixel_rates" in params:
             self.i["fast_scan"]=(params["pixel_rate"]==params["all_pixel_rates"][-1])
+
+class PicamCameraSettings_GUI(GenericCameraSettings_GUI):
+    _bin_kind="both"
+    _frame_period_kind="indicator"
 
 
 class UC480CameraSettings_GUI(GenericCameraSettings_GUI):

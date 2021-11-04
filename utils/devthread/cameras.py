@@ -5,6 +5,7 @@ from pylablib.thread.devices.PCO import PCOSC2CameraThread
 from pylablib.thread.devices.PhotonFocus import IMAQPhotonFocusCameraThread as BaseIMAQPhotonFocusCameraThread, SiliconSoftwarePhotonFocusCameraThread
 from pylablib.thread.devices.Thorlabs import ThorlabsTLCameraThread
 from pylablib.thread.devices.IMAQdx import IMAQdxCameraThread, EthernetIMAQdxCameraThread
+from pylablib.thread.devices.PrincetonInstruments import PicamCameraThread
 
 
 

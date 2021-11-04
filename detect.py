@@ -19,7 +19,7 @@ if __name__=="__main__":
     os.chdir(os.path.join(".",os.path.split(sys.argv[0])[0]))
     sys.path.append(".")  # set current folder to the file location and add it to the search path
 
-from pylablib.devices import Andor, DCAM, IMAQdx, IMAQ, PhotonFocus, SiliconSoftware, PCO, uc480, Thorlabs
+from pylablib.devices import Andor, DCAM, IMAQdx, IMAQ, PhotonFocus, SiliconSoftware, PrincetonInstruments, PCO, uc480, Thorlabs
 from pylablib.core.utils import dictionary
 from pylablib.core.fileio.loadfile import load_dict
 from pylablib.core.fileio.savefile import save_dict
@@ -53,7 +53,7 @@ def detect_AndorSDK2(verbose=False):
     if verbose: print("Found {} Andor SDK2 camera{}".format(cam_num,"s" if cam_num>1 else ""))
     for i in range(cam_num):
         try:
-            if verbose: print("Checking Andor SDK2 camera idx={}".format(i))
+            if verbose: print("Found Andor SDK2 camera idx={}".format(i))
             with Andor.AndorSDK2Camera(idx=i) as cam:
                 cam_desc=dictionary.Dictionary({"params/idx":i})
                 cap=cam.get_capabilities()
@@ -87,7 +87,7 @@ def detect_AndorSDK3(verbose=False):
     if verbose: print("Found {} Andor SDK3 camera{}".format(cam_num,"s" if cam_num>1 else ""))
     for i in range(cam_num):
         try:
-            if verbose: print("Checking Andor SDK3 camera idx={}".format(i))
+            if verbose: print("Found Andor SDK3 camera idx={}".format(i))
             with Andor.AndorSDK3Camera(idx=i) as cam:
                 cam_desc=dictionary.Dictionary({"params/idx":i})
                 device_info=cam.get_device_info()
@@ -118,7 +118,7 @@ def detect_DCAM(verbose=False):
     if verbose: print("Found {} DCAM camera{}".format(cam_num,"s" if cam_num>1 else ""))
     for i in range(cam_num):
         try:
-            if verbose: print("Checking DCAM camera idx={}".format(i))
+            if verbose: print("Found DCAM camera idx={}".format(i))
             with DCAM.DCAMCamera(idx=i) as cam:
                 cam_desc=dictionary.Dictionary({"params/idx":i})
                 device_info=cam.get_device_info()
@@ -275,7 +275,7 @@ def detect_PCO(verbose=False):
     if verbose: print("Found {} PCO camera{}".format(cam_num,"s" if cam_num>1 else ""))
     for i in range(cam_num):
         try:
-            if verbose: print("Checking PCO camera idx={}".format(i))
+            if verbose: print("Found PCO camera idx={}".format(i))
             with PCO.PCOSC2Camera(idx=i) as cam:
                 cam_desc=dictionary.Dictionary({"params/idx":i,"kind":"PCOSC2"})
                 device_info=cam.get_device_info()
@@ -286,6 +286,28 @@ def detect_PCO(verbose=False):
             if verbose: print_added_camera(cam_name,cam_desc)
         except PCO.PCOSC2Error:
             pass
+    return cameras
+
+def detect_Picam(verbose=False):
+    if verbose: print("Searching for Picam cameras")
+    cameras=dictionary.Dictionary()
+    try:
+        cams=PrincetonInstruments.list_cameras()
+    except (PrincetonInstruments.PicamError, OSError):
+        if verbose: print("Error loading or running the Picam library: required software (Princeton Instruments PICam) must be missing\n")
+        return cameras
+    if len(cams)==0:
+        if verbose: print("Found no Picam cameras\n")
+        return cameras
+    cam_num=len(cams)
+    if verbose: print("Found {} Picam camera{}".format(cam_num,"s" if cam_num>1 else ""))
+    for i,cdesc in enumerate(cams):
+        cam_desc=dictionary.Dictionary({"params/serial_number":cdesc.serial_number,"kind":"Picam"})
+        if verbose: print("Found Picam camera serial number={}\n\tModel {},   name {}".format(i,cdesc.model,cdesc.name))
+        cam_desc["display_name"]="{} {}".format(cdesc.model,cdesc.serial_number)
+        cam_name="picam_{}".format(i)
+        cameras[cam_name]=cam_desc
+        if verbose: print_added_camera(cam_name,cam_desc)
     return cameras
 
 def detect_uc480(verbose=False, backend="uc480"):
@@ -305,7 +327,7 @@ def detect_uc480(verbose=False, backend="uc480"):
         idx=c.cam_id
         dev_idx=c.dev_id
         sn=c.serial_number
-        if verbose: print("Checking {} camera dev_idx={}, cam_idx={}".format(backend,dev_idx,idx))
+        if verbose: print("Found {} camera dev_idx={}, cam_idx={}".format(backend,dev_idx,idx))
         if verbose: print("\tModel {}, serial {}".format(c.model,sn))
         cam_desc=dictionary.Dictionary({"params/idx":idx,"params/dev_idx":dev_idx,"params/sn":sn,"params/backend":backend,"kind":"UC480"})
         cam_desc["display_name"]="{} {}".format(c.model,c.serial_number)
@@ -328,7 +350,7 @@ def detect_ThorlabsTLCam(verbose=False):
         return cameras
     if verbose: print("Found {} Thorlabs TLCam camera{}".format(cam_num,"s" if cam_num>1 else ""))
     for s in cam_infos:
-        if verbose: print("Checking Thorlabs TSI camera serial={}".format(s))
+        if verbose: print("Found Thorlabs TSI camera serial={}".format(s))
         cam_desc=dictionary.Dictionary({"params/serial":s,"kind":"ThorlabsTLCam"})
         with Thorlabs.ThorlabsTLCamera(s) as cam:
             device_info=cam.get_device_info()
@@ -346,6 +368,7 @@ def detect_all(verbose=False):
     cams.merge(detect_DCAM(verbose=verbose),"cameras")
     cams.merge(detect_IMAQdx(verbose=verbose),"cameras")
     cams.merge(detect_PhotonFocus(verbose=verbose),"cameras")
+    cams.merge(detect_Picam(verbose=verbose),"cameras")
     cams.merge(detect_PCO(verbose=verbose),"cameras")
     cams.merge(detect_uc480(verbose=verbose,backend="uc480"),"cameras")
     cams.merge(detect_uc480(verbose=verbose,backend="ueye"),"cameras")
