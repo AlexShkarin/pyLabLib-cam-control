@@ -38,6 +38,7 @@ import threading
 
 from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
+from utils.gui import color_theme
 from utils import services, devthread
 import plugins
 
@@ -509,6 +510,7 @@ if __name__=="__main__":
 
             # Create forms
             app=QtWidgets.QApplication(sys.argv)
+            app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
             main_form=StandaloneFrame()
             select_form=CamSelectFrame()
 
