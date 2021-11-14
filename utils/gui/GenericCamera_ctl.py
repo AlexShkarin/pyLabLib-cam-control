@@ -472,6 +472,23 @@ class ThorlabsTLCameraSettings_GUI(GenericCameraSettings_GUI):
 
 ##### Status tables #####
 
+_cam_kind_labels={
+    "AndorSDK2":        "Generic Andor SDK2",
+    "AndorSDK2IXON":    "Andor iXON",
+    "AndorSDK2Luca":    "Andor Luca",
+    "AndorSDK3":        "Generic Andor SDK3",
+    "AndorSDK3Zyla":    "Andor Zyla",
+    "DCAM":             "Generic Hamamatsu",
+    "DCAMOrca":         "Hamamatsu Orca",
+    "DCAMImagEM":       "Hamamatsu ImagEM",
+    "PhotonFocusLAN":   "PhotonFocus Ethernet",
+    "PhotonFocusIMAQ":  "PhotonFocus + IMAQ",
+    "PhotonFocusSiSo":  "PhotonFocus + Silicon Software",
+    "PCOSC2":           "Generic PCO",
+    "Picam":            "Princeton Instruments PICam",
+    "UC480":            "Thorlabs uc480 / IDS uEye",
+    "ThorlabsTLCam":    "Thorlabs Scientific Cameras",
+}
 class GenericCameraStatus_GUI(param_table.StatusTable):
     """
     Generic camera status table.
@@ -486,12 +503,16 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
     def setup(self, ctl):
         param_table.StatusTable.setup(self,"status_table")
         self.cam_ctl=ctl
-        self.add_text_label("cam_name",label="Name:")
-        self.w["cam_name"].setMaximumWidth(130)
-        self.add_text_label("cam_kind",label="Kind:")
-        # self.add_text_label("cam_model",label="Model:")
-        self.add_status_line("connection",label="Connection:",srcs=self.cam_ctl.cam_thread,tags="status/connection_text")
+        with self.using_new_sublayout("header","grid"):
+            self.add_text_label("cam_name",label="Name:")
+            self.w["cam_name"].setMaximumWidth(190)
+            self.add_text_label("cam_kind",label="Kind:")
+            self.w["cam_kind"].setMaximumWidth(190)
         self.add_spacer(5)
+        def set_connection_style(v):
+            self.w["connection"].setStyleSheet("background: gold; font-weight: bold; color: black" if v=="Disconnected" else "")
+        self.add_status_line("connection",label="Connection:",srcs=self.cam_ctl.cam_thread,tags="status/connection_text")
+        self.vs["connection"].connect(set_connection_style)
         self.add_status_line("acquisition",label="Acquisition:",srcs=self.cam_ctl.cam_thread,tags="status/acquisition_text")
         self.add_num_label("frames/acquired",formatter=("int"),label="Frames acquired:")
         self.add_num_label("frames/read",formatter=("int"),label="Frames read:")
@@ -499,6 +520,10 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
         self.add_num_label("frames/fps",formatter=("float","auto",2),label="FPS:")
         self.setup_status_table()
         self.add_padding()
+    def set_camera_description(self, name, kind):
+        """Display the given camera kind"""
+        self.v["cam_name"]=name
+        self.v["cam_kind"]=_cam_kind_labels.get(kind,kind)
     def setup_status_table(self):
         """Setup status table entries"""
     # Update the interface indicators according to camera parameters
@@ -588,7 +613,7 @@ class UC480CameraStatus_GUI(GenericCameraStatus_GUI):
     Status table widget for uc480 cameras.
     """
     def setup_status_table(self):
-        self.add_num_label("frames_lost",formatter=("int"),label="Frames lost in transfer:")
+        self.add_num_label("frames_lost",formatter=("int"),label="Frames lost:")
     # Update the interface indicators according to camera parameters
     def show_parameters(self, params):
         super().show_parameters(params)

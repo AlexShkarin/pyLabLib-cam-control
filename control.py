@@ -80,7 +80,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.cam_name=cam_name
         self.settings=settings
         self.gui_level="full"
-        compact=settings.get("interface/compact",False)
+        self.compact_interface=settings.get("interface/compact",False)
 
         ### Setup GUI
         cam_display_name=settings["cameras",self.cam_name].get("display_name",self.cam_name)
@@ -117,7 +117,7 @@ class StandaloneFrame(container.QWidgetContainer):
                 self.cam_ctl.image_updated.connect(self.display_settings_table.on_new_frame)
             self.image_plotter.plt.set_colormap("gray_sat")
         # Setup status and saving
-        if not compact:
+        if not self.compact_interface:
             with self.using_new_sublayout("status_saving","vbox"):
                 self._add_savebox(self)
                 status_box=self.add_group_box("status_box",caption="Status")
@@ -127,7 +127,7 @@ class StandaloneFrame(container.QWidgetContainer):
         # Setup control tab widget
         with self.using_new_sublayout("control_tabs_box","vbox"):
             self.control_tabs=self.add_child("control_tabs",container.QTabContainer(self))
-            self.control_tabs.setMinimumWidth(300 if compact else 270)
+            self.control_tabs.setMinimumWidth(300 if self.compact_interface else 270)
             self.control_tabs.setup()
             self._add_param_loading(self)
         cam_tab=self.control_tabs.add_tab("cam_tab","Camera",no_margins=False)
@@ -135,7 +135,7 @@ class StandaloneFrame(container.QWidgetContainer):
         cam_tab.add_group_box("cam_settings_box",caption="Camera settings",no_margins=False).add_to_layout(self.cam_settings_table)
         self.cam_settings_table.setup(self.cam_ctl)
         self.cam_ctl.add_child("settings",self.cam_settings_table,gui_values_path="cam")
-        if compact:
+        if self.compact_interface:
             cam_tab.add_spacer(20)
             self._add_camstatus(cam_tab)
             cam_tab.add_padding(stretch=1)
@@ -165,7 +165,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.add_property_element("defaults/window/size",
             lambda: (self.size().width(),self.size().height()), lambda v: self.resize(*v), add_indicator=False)
         self.add_property_element("defaults/window/position",
-            lambda: (self.x(),self.y()), lambda v: self.move(*v), add_indicator=False)
+            lambda: (self.geometry().x(),self.geometry().y()), lambda v: self.setGeometry(v[0],v[1],self.size().width(),self.size().height()), add_indicator=False)
         self.add_property_element("defaults/window/maximized",
             lambda: self.windowState()==QtCore.Qt.WindowMaximized, lambda v: self.showMaximized() if v else None, add_indicator=False)
         self.add_virtual_element("defaults/settings_folder",value="",add_indicator=False)
@@ -214,6 +214,11 @@ class StandaloneFrame(container.QWidgetContainer):
         self.params_loading_settings.add_combo_box("settings_load_scope",label="Loading scope:",options=["All","Camera","GUI"],index_values=["all","camera","gui"])
         self.params_loading_settings.vs["load_settings"].connect(self.on_load_settings_button)
         self.params_loading_settings.vs["save_settings"].connect(self.on_save_settings_button)
+
+    closed=Signal()
+    def closeEvent(self, event):
+        self.closed.emit()
+        return super().closeEvent(event)
             
     @controller.exsafeSlot()
     def on_load_settings_button(self):
@@ -351,7 +356,7 @@ class StandaloneFrame(container.QWidgetContainer):
         super().set_all_values(values)
         self.image_proc_indicator.update_indicators()
 
-    def load_settings(self, path=None, missing_warning=True, scope="all", cam_apply=False):
+    def load_settings(self, path=None, warn_if_missing=True, scope="all", cam_apply=False):
         if path is None:
             path=_defaults_filename
         if os.path.exists(path):
@@ -369,7 +374,7 @@ class StandaloneFrame(container.QWidgetContainer):
                     warn_msg="settings file camera ({}) is different from the current camera ({})".format(cam,self.cam_name)
                 else:
                     warn_msg=None
-                if warn_msg is not None and not missing_warning:
+                if warn_msg is not None and warn_if_missing:
                     result=QtWidgets.QMessageBox.warning(self,"Incompatible settings format","Warning: {}; load anyway?".format(warn_msg),QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
                     if result==QtWidgets.QMessageBox.No:
                         return
@@ -377,7 +382,7 @@ class StandaloneFrame(container.QWidgetContainer):
             elif self.cam_name in settings:
                 settings=settings[self.cam_name]
             else:
-                if not missing_warning:
+                if warn_if_missing:
                     QtWidgets.QMessageBox.warning(self,"Missing settings in the file","Warning: either loading not a settings file, or it contains settings for different cameras",QtWidgets.QMessageBox.Ok)
                 settings={}
             if scope=="gui" and "cam/cam" in settings:
@@ -387,6 +392,8 @@ class StandaloneFrame(container.QWidgetContainer):
             self.set_all_values(settings)
             if cam_apply and scope in {"all","camera"}:
                 self.cam_ctl.send_parameters()
+            return True
+        return False
     @controller.exsafe
     def save_settings(self, path=None):
         if path is None:
@@ -403,7 +410,7 @@ class StandaloneFrame(container.QWidgetContainer):
     def start(self):
         self._sync_plugins()
         controller.sync_controller(cam_thread)
-        self.load_settings(missing_warning=False)
+        self.load_settings(warn_if_missing=False)
         super().start()
         self._notify_plugins()
     @controller.exsafeSlot()

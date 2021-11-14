@@ -62,8 +62,9 @@ class GenericCameraCtl(container.QContainer):
         """Start update timer"""
         self.dev=controller.sync_controller(self.cam_thread,"start")
         if "camstat" in self.c and self.cam_name is not None:
-            self.v["camstat/cam_name"]=self.settings.get(("cameras",self.cam_name,"display_name"),self.cam_name)
-            self.v["camstat/cam_kind"]=self.settings.get(("cameras",self.cam_name,"kind"),"")
+            cam_name=self.settings.get(("cameras",self.cam_name,"display_name"),self.cam_name)
+            cam_kind=self.settings.get(("cameras",self.cam_name,"kind"),"")
+            self.c["camstat"].set_camera_description(cam_name,cam_kind)
         self.setup_pretrigger()
         super().start()
     

@@ -34,6 +34,7 @@ class FilterPanel(widgets.QFrameContainer):
         self.params.setup(add_indicator=False)
         self.params.add_combo_box("filter_id",label="Filter:",options=list(filters.values()),index_values=list(filters),out_of_range="ignore")
         self.params.add_button("load_filter","Load",location=(-1,2,1,1))
+        self.params.w["load_filter"].setMinimumWidth(50)
         @controller.exsafe
         def load_filter():
             self.plugin.ca.load_filter(self.v["filter_id"])

@@ -33,10 +33,10 @@ class TriggerSavePlugin(base.IPlugin):
         self.table.add_num_edit("max_videos",1,limiter=(1,None,"coerce","int"),formatter="int",label="Number of videos",add_indicator=True)
         trig_mode_names={"timer":"Timer","image":"Image"}
         self.table.add_combo_box("trigger_mode",options=[trig_mode_names[m] for m in self.trig_modes],index_values=self.trig_modes,label="Trigger mode")
-        self.table.add_combo_box("frame_source",options=[],label="Trigger frame source")
         self.table.add_num_edit("period",10,limiter=(.1,None,"coerce"),formatter=("float","auto",1),label="Timer period (s)")
-        self.table.add_num_edit("dead_time",10,limiter=(0,None,"coerce"),formatter=("float","auto",1),label="Dead time (s)")
+        self.table.add_combo_box("frame_source",options=[],label="Trigger frame source")
         self.table.add_num_edit("image_trigger_threshold",0,formatter=("float","auto",4),label="Trigger threshold")
+        self.table.add_num_edit("dead_time",10,limiter=(0,None,"coerce"),formatter=("float","auto",1),label="Dead time (s)")
         self.table.add_text_label("event_trigger_status","armed",label="Event trigger status: ")
         self.table.add_toggle_button("enabled","Enabled",value=False)
         self.table.vs["limit_videos"].connect(lambda v: self.table.set_enabled("max_videos",v))

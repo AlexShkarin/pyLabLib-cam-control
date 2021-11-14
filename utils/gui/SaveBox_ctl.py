@@ -92,17 +92,18 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             default_path=self.v["default_snap_path"]
             if default_path:
                 path,ext=os.path.splitext(self.v["path"])
-                if ext!=self._default_ext[self.v["format"]]:
+                if ext not in self._allowed_ext[self.v["format"]]:
                     path=path+ext
                 self.v["snap_path"]=path+"_snapshot"
                 self.v["snap_make_folder"]=self.v["make_folder"]
                 self.v["snap_add_datetime"]=self.v["add_datetime"]
             self.params.set_enabled(["snap_path","snap_browse","snap_make_folder","snap_add_datetime"],not default_path)
-        for p in ["path","make_folder","add_datetime","default_snap_path"]:
+        for p in ["path","format","make_folder","add_datetime","default_snap_path"]:
             self.params.vs[p].connect(update_snap_path)
         self.v["default_snap_path"]=True
         with self.params.using_new_sublayout("snap_saving","hbox",location=("next",0,1,3)):
             self.params.add_button("snap_displayed","Snap")
+            self.params.w["snap_displayed"].setMinimumWidth(50)
             self.params.vs["snap_displayed"].connect(lambda v: self.cam_ctl.toggle_saving(mode="snap",source=self.v["snap_display_source"]))
             self.params.add_combo_box("snap_display_source",options=[])
             self.update_display_source_options(reset_value=True)
@@ -114,6 +115,8 @@ class SaveBox_GUI(container.QGroupBoxContainer):
 
     # Build a dictionary of camera parameters from the controls
     _default_ext={"raw":".bin","cam":".cam","tiff":".tiff","bigtiff":".btf"}
+    _allowed_ext={k:[e] for k,e in _default_ext.items()}
+    _allowed_ext["tiff"].append(".tif")
     _path_gens={"pfx":"{date}_{name}","sfx":"{name}_{date}","folder":"{date}/{name}"}
     def _expand_name(self, name, idx=None, add_datetime=False, as_folder=False):
         if add_datetime:
@@ -154,16 +157,16 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             add_datetime=self.v["snap_add_datetime" if use_snap_parameters else "add_datetime"]
             make_folder=self.v["snap_make_folder" if use_snap_parameters else "make_folder"]
             fext=self._default_ext[params["format"]]
+            aext=self._allowed_ext[params["format"]]
             path_kind="snap_path" if mode=="snap" else "path"
             if make_folder:
                 path=self.v[path_kind]
                 ext=fext
             else:
                 path,ext=os.path.splitext(self.v[path_kind])
-                if not ext:
+                if ext not in aext:
+                    path+=ext
                     ext=fext
-                elif ext!=fext:
-                    ext=ext+fext
             folder,name=os.path.split(path)
             if mode=="snap" or self.v["on_name_conflict"]=="rename":
                 idx=None
@@ -244,10 +247,10 @@ class SaveStatus_GUI(param_table.StatusTable):
         self.add_num_label("frames/saved",formatter=("int"),label="Frames saved:")
         self.add_num_label("frames/missed",formatter=("int"),label="Frames missed:")
         self.add_text_label("frames/status_line_check",label="Status line:")
-        self.add_text_label("frames/ram_status",label="RAM status:")
+        self.add_text_label("frames/ram_status",label="Saving buffer:")
         self.add_num_label("frames/pretrigger_frames",formatter=("int"),label="Pretrigger frames:")
-        self.add_num_label("frames/pretrigger_skipped",formatter=("int"),label="Pretrigger skipped:")
         self.add_num_label("frames/pretrigger_ram",formatter=("int"),label="Pretrigger RAM:")
+        self.add_num_label("frames/pretrigger_skipped",formatter=("int"),label="Pretrigger missed:")
         self.add_padding()
     def show_parameters(self, params):
         """Update camera status lines"""
