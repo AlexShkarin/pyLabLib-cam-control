@@ -38,7 +38,7 @@ import threading
 
 from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
-from utils.gui import color_theme
+from utils.gui import tutorial, color_theme
 from utils import services, devthread
 import plugins
 
@@ -170,6 +170,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.add_property_element("defaults/window/maximized",
             lambda: self.windowState()==QtCore.Qt.WindowMaximized, lambda v: self.showMaximized() if v else None, add_indicator=False)
         self.add_virtual_element("defaults/settings_folder",value="",add_indicator=False)
+        self.tutorial_box=None
 
         # Setup plugins
         plugin_tab=self.control_tabs.add_tab("plugins","Plugins",gui_values_path="plugins",layout="grid")
@@ -212,9 +213,13 @@ class StandaloneFrame(container.QWidgetContainer):
         with self.params_loading_settings.using_new_sublayout("buttons","hbox"):
             self.params_loading_settings.add_button("load_settings","Load settings...")
             self.params_loading_settings.add_button("save_settings","Save settings...")
-        self.params_loading_settings.add_combo_box("settings_load_scope",label="Loading scope:",options=["All","Camera","GUI"],index_values=["all","camera","gui"])
+        with self.params_loading_settings.using_new_sublayout("scope","hbox"):
+            self.params_loading_settings.add_combo_box("settings_load_scope",label="Loading scope:",options=["All","Camera","GUI"],index_values=["all","camera","gui"])
+            self.params_loading_settings.add_spacer(1,30)
+            self.params_loading_settings.add_dropdown_button("extras","Extra...",options=["Tutorial"],index_values=["tutorial"])
         self.params_loading_settings.vs["load_settings"].connect(self.on_load_settings_button)
         self.params_loading_settings.vs["save_settings"].connect(self.on_save_settings_button)
+        self.params_loading_settings.vs["extras"].connect(self.call_extra)
 
     closed=Signal()
     def closeEvent(self, event):
@@ -233,6 +238,20 @@ class StandaloneFrame(container.QWidgetContainer):
         if path:
             self.v["defaults/settings_folder"]=os.path.split(path)[0]
             self.save_settings(path)
+    def show_tutorial_box(self):
+        self.tutorial_box=tutorial.TutorialBox()
+        self.tutorial_box.setup(self)
+        self.tutorial_box.show()
+    @controller.exsafeSlot(object)
+    def call_extra(self, value):
+        if value=="tutorial":
+            if self.tutorial_box is None:
+                self.show_tutorial_box()
+            elif not self.tutorial_box.isVisible():
+                self.tutorial_box.close()
+                self.show_tutorial_box()
+            else:
+                self.tutorial_box.showNormal()
 
     _ext_controller_names={"camera":cam_thread,"processor":process_thread,"preprocessor":preprocess_thread,"saver":save_thread,"snap_saver":snap_save_thread,
         "slowdown":slowdown_thread,"channel_accumulator":channel_accumulator_thread,"settings_manager":settings_manager_thread,"resource_manager":resource_manager_thread}
@@ -411,9 +430,11 @@ class StandaloneFrame(container.QWidgetContainer):
     def start(self):
         self._sync_plugins()
         controller.sync_controller(cam_thread)
-        self.load_settings(warn_if_missing=False)
+        first_time=not self.load_settings(warn_if_missing=False)
         super().start()
         self._notify_plugins()
+        if first_time:
+            self.show_tutorial_box()
     @controller.exsafeSlot()
     def stop(self):
         if self._running:
