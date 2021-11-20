@@ -37,11 +37,11 @@ class GenericCameraCtl(container.QContainer):
     
     def setup(self):
         super().setup()
-        self.saver=controller.sync_controller(self.save_thread,"start") if self.save_thread else None
+        self.saver=controller.sync_controller(self.save_thread,"run") if self.save_thread else None
         self.snap_saver=controller.sync_controller(self.snap_save_thread,"start") if self.snap_save_thread else None
         self.resource_manager=controller.sync_controller(self.resource_manager_thread) if self.resource_manager_thread else None
         self.ctl.subscribe_sync(self.receive_frame,self.frame_src_thread,tags=self.frame_tag,limit_queue=1)
-        self.ctl.subscribe_sync(lambda *args: self.recv_parameters(),self.cam_thread,tags="status/connection",filt=lambda s,d,t,v: v=="opened")
+        self.ctl.subscribe_sync(lambda *args: self.recv_status_update(args[-1]),self.cam_thread,tags="status/connection")
         self.ctl.subscribe_sync(lambda src,tag,val: self.plot_control(*val),tags="image_plotter/control",limit_queue=-1)
         if self.resource_manager is not None:
             self.resource_manager.cs.add_resource("frame/display","standard",caption="Standard",src=self.frame_src_thread,tag=self.frame_tag,frame=None)
@@ -53,10 +53,10 @@ class GenericCameraCtl(container.QContainer):
         self.ctl.add_thread_method("acq_start",self.acq_start)
         self.ctl.add_thread_method("acq_stop",self.acq_stop)
         self.ctl.add_thread_method("clear_pretrigger",self.clear_pretrigger)
-        self.initialized=False
+        self.connected=False
         self._last_parameters={}
         self._last_shown_frame=None
-        self.add_timer_event("recv_parameters",self.recv_parameters,period=0.5)
+        self.add_timer_event("update_parameters",self.update_parameters,period=0.5)
 
     def start(self):
         """Start update timer"""
@@ -67,6 +67,7 @@ class GenericCameraCtl(container.QContainer):
             self.c["camstat"].set_camera_description(cam_name,cam_kind)
         self.setup_pretrigger()
         super().start()
+        self.recv_status_update(self.dev.v["status/connection"])
     
     @controller.exsafe
     def dev_connect(self):
@@ -121,7 +122,7 @@ class GenericCameraCtl(container.QContainer):
                     self.send_snap_frame(source=source or params["snap_display_source"])
                 else:
                     self.snap_saver.ca.save_stop()
-            self.recv_parameters(update={"status/saving":"in_progress"} if (start and mode=="full") else None)
+            self.update_parameters(update={"status/saving":"in_progress"} if (start and mode=="full") else None)
     frames_sources_updates=Signal()
     def get_frame_sources(self):
         """Get a dictionary ``{name: caption}`` of all frame sources for the snap saving"""
@@ -165,33 +166,38 @@ class GenericCameraCtl(container.QContainer):
             return {}
         self.dev.sync_exec_point("run",timeout=20.)
         params=self.dev.get_variable("parameters") or {}
-        if params:
-            for s in ["frames/read","frames/acquired","frames/buffer_filled","frames/fps"]:
-                params[s]=self.dev.v[s]
-            if self.saver:
-                params["status/saving"]=self.saver.get_variable("status/saving","stopped")
-                for n in ["saved","missed","received","scheduled","queue_ram","max_queue_ram","pretrigger_status"]:
-                    params["frames",n]=self.saver.get_variable(n,0)    
-                params["frames/status_line_check"]=self.saver.get_variable("status_line_check","none")
+        for s in ["status/connection","status/acquisition","frames/read","frames/acquired","frames/buffer_filled","frames/fps"]:
+            params[s]=self.dev.v[s]
+        if self.saver:
+            params["status/saving"]=self.saver.get_variable("status/saving","stopped")
+            for n in ["saved","missed","received","scheduled","queue_ram","max_queue_ram","pretrigger_status"]:
+                params["frames",n]=self.saver.get_variable(n,0)    
+            params["frames/status_line_check"]=self.saver.get_variable("status_line_check","none")
         return params
-    # Check camera parameters and setup the interface (called on timer)
     @controller.exsafe
-    def recv_parameters(self, update=None):
-        """Receive camera and saving parameters, and show them in widgets"""
+    def recv_status_update(self, status):
+        """Receive camera connection status update"""
+        if not self.is_running():
+            return
+        connected=status=="opened"
+        just_connected=connected and not self.connected
+        self.connected=connected
+        if just_connected:
+            self.send_parameters()
+        self.update_parameters()
+    # Check camera parameters and setup the interface (called on timer)
+    def update_parameters(self, update=None):
+        """Update camera and saving parameters, and show them in widgets"""
         params=self.get_thread_parameters()
         params.update(update or {})
-        if params:
-            if "settings" in self.c:
-                self.c["settings"].show_parameters(params)
-            if "camstat" in self.c:
-                self.c["camstat"].show_parameters(params)
-            if "savebox" in self.c:
-                self.c["savebox"].show_parameters(params)
-            if "savestat" in self.c:
-                self.c["savestat"].show_parameters(params)
-            if not self.initialized:
-                self.initialized=True
-                self.send_parameters()
+        if "settings" in self.c and self.connected:
+            self.c["settings"].show_parameters(params)
+        if "camstat" in self.c:
+            self.c["camstat"].show_parameters(params)
+        if "savebox" in self.c:
+            self.c["savebox"].show_parameters(params)
+        if "savestat" in self.c:
+            self.c["savestat"].show_parameters(params)
     # Send control parameters to the camera (called on Apply button press)
     @controller.exsafe
     def send_parameters(self, only_diff=False, dependencies=None):
@@ -202,7 +208,7 @@ class GenericCameraCtl(container.QContainer):
         If dependencies` is not ``None``, it specifies dictionary ``{name: [deps]}`` with parameter dependencies;
         when parameter ``name`` is updated, all dependent parameters (in list ``[deps]``) should be updated as well (only applies if ``only_diff==True``).
         """
-        if "settings" in self.c and self.initialized:
+        if "settings" in self.c and self.connected:
             params=self.c["settings"].collect_parameters()
             if only_diff:
                 send_params=params.copy()
