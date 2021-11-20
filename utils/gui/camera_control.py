@@ -46,6 +46,7 @@ class GenericCameraCtl(container.QContainer):
         if self.resource_manager is not None:
             self.resource_manager.cs.add_resource("frame/display","standard",caption="Standard",src=self.frame_src_thread,tag=self.frame_tag,frame=None)
             self.ctl.subscribe_sync(lambda *args: self.frames_sources_updates.emit(),srcs=self.resource_manager_thread,tags=["resource/added","resource/removed"])
+            self.setup_activity_indicators()
         self.ctl.add_thread_method("toggle_saving",self.toggle_saving)
         self.ctl.add_thread_method("get_saving_parameters",lambda mode="full": self.c["savebox"].collect_parameters(mode))
         self.ctl.add_thread_method("dev_connect",self.dev_connect)
@@ -58,6 +59,25 @@ class GenericCameraCtl(container.QContainer):
         self._last_shown_frame=None
         self.add_timer_event("update_parameters",self.update_parameters,period=0.5)
 
+    def setup_activity_indicators(self):
+        """Setup activities indicators and their update methods"""
+        def status_updater(status_states):
+            def updater(src, tag, value):
+                return {"status":status_states.get(value,"off")}
+            return updater
+        self.resource_manager.cs.add_resource("process_activity","camera/connection",caption="Camera connection",short_cap="Con",order=0)
+        connection_updater=status_updater({"opened":"on","opening":"pause","closing":"off"})
+        self.resource_manager.cs.add_multicast_updater("process_activity","camera/connection",connection_updater,
+            srcs=self.cam_thread,tags="status/connection")
+        self.resource_manager.cs.add_resource("process_activity","camera/acquisition",caption="Camera acquisition",short_cap="Acq",order=1)
+        acquisition_updater=status_updater({"acquiring":"on","setup":"pause","cleanup":"pause"})
+        self.resource_manager.cs.add_multicast_updater("process_activity","camera/acquisition",acquisition_updater,
+            srcs=self.cam_thread,tags="status/acquisition")
+        if self.save_thread:
+            self.resource_manager.cs.add_resource("process_activity","saving/streaming",caption="Saving",short_cap="Sav",order=1)
+            saving_updater=status_updater({"in_progress":"on","stopping":"pause"})
+            self.resource_manager.cs.add_multicast_updater("process_activity","saving/streaming",saving_updater,
+                srcs=self.save_thread,tags="status/saving")
     def start(self):
         """Start update timer"""
         self.dev=controller.sync_controller(self.cam_thread,"start")

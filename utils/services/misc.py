@@ -64,10 +64,12 @@ class ResourceManager(controller.QTaskThread):
         super().setup_task()
         self._lock=threading.Lock()
         self.resources={}
+        self._updaters={}
         self.add_direct_call_command("add_resource")
         self.add_direct_call_command("get_resource")
         self.add_direct_call_command("list_resources")
         self.add_direct_call_command("update_resource")
+        self.add_direct_call_command("add_multicast_updater")
         self.add_direct_call_command("remove_resource")
     
     def add_resource(self, kind, name, ctl=None, **kwargs):
@@ -119,6 +121,18 @@ class ResourceManager(controller.QTaskThread):
                 value=self.resources[kind][name].copy()
                 self.send_multicast(tag="resource/updated",value=(kind,name,value))
                 self.send_multicast(tag="resource/{}/updated".format(kind),value=(name,value))
+    def add_multicast_updater(self, kind, name, updater, srcs="any", tags=None, dsts="any"):
+        """
+        Add auto-updater which updates a resource based on an incoming multicast.
+
+        `updater` is a function which takes 3 arguments (``src``, ``tag``, and ``value``)
+        and returns an update dictionary (or ``None`` if no update is necessary).
+        """
+        def do_update(src, tag, value):
+            params=updater(src,tag,value) or {}
+            self.update_resource(kind,name,**params)
+        sid=self.subscribe_direct(do_update,srcs=srcs,tags=tags,dsts=dsts)
+        self._updaters.setdefault(kind,{}).setdefault(name,[]).append(sid)
     def remove_resource(self, kind, name):
         """Remove the resource with the given kind and name"""
         with self._lock:
@@ -126,3 +140,7 @@ class ResourceManager(controller.QTaskThread):
                 del self.resources[kind][name]
                 self.send_multicast(tag="resource/removed",value=(kind,name))
                 self.send_multicast(tag="resource/{}/removed".format(kind),value=name)
+                if kind in self._updaters and name in self._updaters[kind]:
+                    sids=self._updaters[kind].pop(name)
+                    for s in sids:
+                        self.unsubscribe(s)

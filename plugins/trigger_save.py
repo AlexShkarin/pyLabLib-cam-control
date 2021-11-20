@@ -20,6 +20,8 @@ class TriggerSavePlugin(base.IPlugin):
         self._trigger_display_time=0.5
         self.trig_modes=["timer","image"]
         self._frame_sources={}
+        self.extctls["resource_manager"].cs.add_resource("process_activity","saving/"+self.full_name,ctl=self.ctl,
+            caption="Trigger save",short_cap="Trg",order=10)
         self.setup_gui_sync()
         self.ctl.subscribe_commsync(lambda *args: self._update_frame_sources(),
             srcs=self.extctls["resource_manager"].name,tags=["resource/added","resource/removed"])
@@ -86,13 +88,15 @@ class TriggerSavePlugin(base.IPlugin):
             self.table.v["enabled"]=False
     def check_timer_trigger(self):
         """Check saving timer and start saving if it's passed"""
-        if self.table.v["enabled"] and self.table.v["trigger_mode"]=="timer":
+        enabled=self.table.v["enabled"]
+        if enabled and self.table.v["trigger_mode"]=="timer":
             t=time.time()
             if self._last_save_timer is None or t>self._last_save_timer+self.table.v["period"]:
                 self._start_save(self.table.v["save_mode"])
                 self._last_save_timer=t
         else:
             self._last_save_timer=None
+        self.extctls["resource_manager"].csi.update_resource("process_activity","saving/"+self.full_name,status="on" if enabled else "off")
     def _update_trigger_status(self, status):
         if self.table.v["event_trigger_status"]!=status: # check (cached) value first to avoid unnecessary calls to GUI thread
             self.table.v["event_trigger_status"]=status

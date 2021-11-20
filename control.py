@@ -36,7 +36,7 @@ import datetime
 import collections
 import threading
 
-from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl
+from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
 from utils.gui import tutorial, color_theme
 from utils import services, devthread
@@ -162,6 +162,8 @@ class StandaloneFrame(container.QWidgetContainer):
         self.control_tabs.setMaximumWidth(300)
         self.set_column_stretch(0,1)
         self.cam_ctl.set_all_values({"img/normalize":True})
+        self.activity_indicator=self.add_child("activity_indicator",ActivityIndicator_ctl.ActivityIndicator_GUI(self))
+        self.activity_indicator.setup(resource_manager_thread=resource_manager_thread)
         # add virtual GUI values
         self.add_property_element("defaults/window/size",
             lambda: (self.size().width(),self.size().height()), lambda v: self.resize(*v), add_indicator=False)

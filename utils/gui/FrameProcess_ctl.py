@@ -50,6 +50,9 @@ class FrameProccess_GUI(container.QGroupBoxContainer):
         # Timer
         self.add_timer_event("recv_parameters",self.recv_parameters,period=0.5)
         self.setEnabled(False)
+    def start(self):
+        self.ctl.call_thread_method("add_activity","processing","background",caption="Background subtraction",short_cap="Bg",order=1)
+        super().start()
 
 
     @controller.exsafe
@@ -66,3 +69,11 @@ class FrameProccess_GUI(container.QGroupBoxContainer):
             self.i["comb_count"]="{} / {}".format(self.image_processor.v[method,"grabbed"],self.image_processor.v[method,"parameters/count"])
             bg_state=self.image_processor.v["snapshot/background/state"]
             self.v["background_state"]={"none":"Not acquired","acquiring":"Accumulating","valid":"Valid","wrong_size":"Wrong size"}[bg_state]
+            enabled=False
+            if self.image_processor.v["enabled"]:
+                method=self.image_processor.v["method"]
+                if method=="snapshot":
+                    enabled=self.image_processor.v["snapshot/background/state"]=="valid"
+                elif method=="running":
+                    enabled=self.image_processor.v["running/background/frame"] is not None
+            self.ctl.call_thread_method("update_activity_status","processing","background",status="on" if enabled else "off")

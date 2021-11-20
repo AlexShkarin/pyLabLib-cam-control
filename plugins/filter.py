@@ -331,6 +331,7 @@ class FilterPlugin(base.IPlugin):
         self._collect_filters()
         self.caption=self.parameters.get("caption","Filter")
         self.filter=None
+        self.filter_enabled=False
         self.ca=self.ctl.ca
         self.cs=self.ctl.cs
         self.csi=self.ctl.csi
@@ -345,6 +346,8 @@ class FilterPlugin(base.IPlugin):
         self.setup_gui_sync()
         self.extctls["resource_manager"].cs.add_resource("frame/display",self.full_name,ctl=self.ctl,
             caption=self.caption,src=self.filter_thread.name,tag=self.filter_thread.tag_out,frame=None)
+        self.extctls["resource_manager"].cs.add_resource("process_activity","processing/"+self.full_name,ctl=self.ctl,
+            caption=self.caption,order=10)
         self.ctl.add_job("update_plots",self.update_plots,0.1)
     def setup_gui(self):
         self.plot_tab=self.gui.add_plot_tab("plt_tab",self.caption,kind="empty")
@@ -409,15 +412,22 @@ class FilterPlugin(base.IPlugin):
         self.filter=self.filter_classes[name]()
         self.filter_thread.cs.set_filter(self.filter)
         self.filter_panel.setup_filter(name,self.filter_thread.v["filter_desc"])
+        self.update_filter_state()
     def unload_filter(self):
         """Unload the currently loaded filter"""
         if self.filter is not None:
             self.filter_thread.csi.remove_filter()
             self.filter_panel.clear_filter()
             self.filter=None
+            self.update_filter_state()
 
+    def update_filter_state(self):
+        enabled=(self.filter is not None) and self.filter_enabled
+        self.extctls["resource_manager"].csi.update_resource("process_activity","processing/"+self.full_name,status="on" if enabled else "off")
     def enable(self, enabled=True):
         """Enable or disable the filter"""
+        self.filter_enabled=enabled
+        self.update_filter_state()
         return self.filter_thread.cs.enable(enabled=enabled)
     def set_parameter(self, name, value):
         """Set the filter parameter"""

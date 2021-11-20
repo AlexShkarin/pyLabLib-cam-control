@@ -41,11 +41,17 @@ class FramePreproccessBinning_GUI(container.QGroupBoxContainer):
         for ctl in ["spat_bin_mode","spat_bin_x","spat_bin_y","time_bin_mode","time_bin","convert_to_float"]:
             self.params.vs[ctl].connect(setup_binning)
         setup_binning()
-        self.params.vs["bin_enabled"].connect(lambda v: self.image_preprocessor.ca.enable_binning(v))
+        self.params.vs["bin_enabled"].connect(self.enable_binning)
         self.params.add_padding("horizontal",location=(0,"next","end",1))
         self.params.layout().setColumnStretch(1,0)
         for ctl in ["spat_bin_x","spat_bin_y","time_bin"]:
             self.params.w[ctl].setMaximumWidth(70)
+    def start(self):
+        self.ctl.call_thread_method("add_activity","processing","binning",caption="Binning",short_cap="Bin",order=0)
+        super().start()
+    def enable_binning(self, enable):
+        self.image_preprocessor.ca.enable_binning(enable)
+        self.ctl.call_thread_method("update_activity_status","processing","binning",status="on" if enable else "off")
 
 
 class FramePreproccessSlowdown_GUI(container.QGroupBoxContainer):
