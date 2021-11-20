@@ -200,12 +200,15 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.setEnabled(True)
         record_in_progress=params.get("status/saving","stopped")=="in_progress"
         just_stopped=self.record_in_progress and not record_in_progress
+        just_started=not self.record_in_progress and record_in_progress
         self.record_in_progress=record_in_progress
         if just_stopped: # record just stopped
             if self.popup_on_missing_frames and not self.cam_ctl.no_popup:
                 if params.get("frames/missed",0)>0 or params.get("frames/status_line_check","na") not in {"na","off","none","ok"}:
                     QtWidgets.QMessageBox.warning(self,"Problems with frames","Some frames are missing, duplicated, or out of order",QtWidgets.QMessageBox.Ok)
-            self.v["saving"]=False
+            self.w["saving"].set_value(False,notify_value_change=False)
+        if just_started:
+            self.w["saving"].set_value(True,notify_value_change=False)
         block_on_record=["path","browse","add_datetime","make_folder","on_name_conflict","format","limit_frames","do_filesplit","pretrigger_enabled","save_settings"]
         self.params.set_enabled(block_on_record,not record_in_progress)
         self.params.set_enabled(["batch_size"],self.v["limit_frames"] and not record_in_progress)

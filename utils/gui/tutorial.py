@@ -113,7 +113,7 @@ class TutorialBox(param_table.ParamTable):
         stages={
             "intro":["overview","navigation","further_info"],
             "camera":["overview","acquisition","connection","parameters"],
-            "cam_status":["overview","name","connection","acquisition","frame_counters","buffer_status","fps"],
+            "cam_status":["overview","name","connection","acquisition","frame_counters","buffer_status","fps","activity_indicator"],
             "images":["overview","overview_image","overview_control","transflip","levels","normalize","histogram","color_scheme","lines","linecuts","updating"],
             "saving":["overview","standard","saving","path","path_modifiers","format","batch_size","filesplit","pretrigger_buffer","save_settings","event_log",
                         "snapshot","snap","snapshot_path","snapshot_use_main_path","snapshot_source","snapshot_format"],
@@ -144,7 +144,7 @@ class TutorialBox(param_table.ParamTable):
             stages={
                 "overview": ("Overview",
                     ("This is a short <b>tutorial</b> which highlights the main parts of the software. You can quit it at any time by closing this window, "
-                    "and you can restart it later from the <i>Extras</i>  menu in the lower right corner."),
+                    "and you can restart it later from the <i>Extras</i>&nbsp; menu in the lower right corner."),
                         [("e","extras")]),
                 "navigation": ("Navigation",
                     ("The buttons below help you <b>navigate</b> the tutorial. The top two buttons move between different highlights, "
@@ -152,7 +152,7 @@ class TutorialBox(param_table.ParamTable):
                         []),
                 "further_info": ("Further information",
                     ("You can find a much more detailed information about this software in its manual "
-                    "<a href='https://pylablib-cam-control.readthedocs.io/'>online</a> or in the <i>docs</i>  folder."),
+                    "<a href='https://pylablib-cam-control.readthedocs.io/'>online</a> or in the <i>docs</i>&nbsp; folder."),
                         [])
             }
         if chapter=="camera":
@@ -165,7 +165,7 @@ class TutorialBox(param_table.ParamTable):
                     "This part controls the <b>camera</b>.",
                         [cont.parent()]),
                 "acquisition": ("Acquisition",
-                    "These buttons <b>start and stop acquisition</b>. By default, it is not running, so you need to press <i>Start acquisition</i>  first.",
+                    "These buttons <b>start and stop acquisition</b>. By default, it is not running, so you need to press <i>Start acquisition</i>&nbsp; first.",
                         ["start","stop"]),
                 "connection": ("Connection",
                     "These buttons let you <b>disconnect</b> the camera to use in a different application and then <b>connect</b> it later.",
@@ -178,7 +178,7 @@ class TutorialBox(param_table.ParamTable):
             ch="Camera status"
             if show and self.main_frame.compact_interface:
                 self.main_frame.control_tabs.set_by_name("cam_tab")
-            cont=self.main_frame.c["cam_controller/camstat"]
+            cont=self.main_frame.c["cam_controller/camstat"] if stage!="activity_indicator" else self.main_frame.c["activity_indicator"]
             stages={
                 "overview": ("Overview",
                     "This is the <b>camera status</b> panel. It displays the camera name, connection, and, most importantly, its buffer fill status.",
@@ -188,11 +188,11 @@ class TutorialBox(param_table.ParamTable):
                         ["cam_name","cam_kind"]),
                 "connection": ("Connection",
                     ("Here is the <b>connection status</b>. Normally it should always read <i>Connected</i>. "
-                    "The only cases when the camera is disconnected is when it could not be connected on the start, or if you explicitly used the <i>Disconnect</i>  button."),
+                    "The only cases when the camera is disconnected is when it could not be connected on the start, or if you explicitly used the <i>Disconnect</i>&nbsp; button."),
                         ["connection"]),
                 "acquisition": ("Acquisition",
                     ("Here is the <b>acquisition status</b>, which shows whether the camera is acquiring. It can also show "
-                    "<i>Setting up..</i>  or <i>Cleaning up...</i>  if the acquisition setup takes some time.<br> "
+                    "<i>Setting up..</i>&nbsp; or <i>Cleaning up...</i>&nbsp; if the acquisition setup takes some time.<br> "
                     "Note that if the camera is in the external trigger mode but no trigger is supplied, it can be in the acquiring state without generating any frames."),
                         ["acquisition"]),
                 "frame_counters": ("Frame counters",
@@ -208,6 +208,10 @@ class TutorialBox(param_table.ParamTable):
                 "fps": ("FPS",
                     "Here you can see a rough estimate of the <b>camera frame rate</b>.",
                         ["frames/fps"]),
+                "activity_indicator": ("Activity indicator",
+                    ("In addition to the main status table, there is a compact <b>activity indicator table</b>, which shows the status of the most important "
+                    "processes in the software: camera connection and acquisition, saving status, and processing status."),
+                        [cont]),
             }
         if chapter=="images":
             ch="Image display"
@@ -238,15 +242,15 @@ class TutorialBox(param_table.ParamTable):
                     "Here you can enable or disable the <b>histogram histogram</b>, which shows the distribution of the image values and the selected color range.",
                         ["show_histogram","auto_histogram_range"]),
                 "color_scheme": ("Color scheme",
-                    "You can also change the <b>color scheme</b> by right-clicking on the <i>color bar</i>  or dragging or changing color on the markers.",
+                    "You can also change the <b>color scheme</b> by right-clicking on the <i>color bar</i>&nbsp; or dragging or changing color on the markers.",
                         ["show_histogram","auto_histogram_range"]),
                 "lines": ("Lines",
                     ("Here you can enable a pair of <b>lines</b> in the image. You can move them either by dragging, or by entering their coordinates in the boxes. "
-                    "<i>Center lines</i>  button recenters the lines within the image."),
+                    "<i>Center lines</i>&nbsp; button recenters the lines within the image."),
                         ["show_lines","hlinepos","vlinepos","center_lines"]),
                 "linecuts": ("Line cuts",
                     ("You can also enable plotting <b>line cuts</b> for the enabled lines. "
-                    "If <i>Line cut width</i>  is above 1, the line cuts are calculated by averaging several consecutive cuts together.<br> "
+                    "If <i>Line cut width</i>&nbsp; is above 1, the line cuts are calculated by averaging several consecutive cuts together.<br> "
                     "Note that plotting line cuts is relatively computation-intensive, so you should turn them off if the operation becomes laggy."),
                         ["show_linecuts","linecut_width"]),
                 "updating": ("Updating",
@@ -268,7 +272,7 @@ class TutorialBox(param_table.ParamTable):
                     "The top part controls the standard <b>data streaming</b>. This mode continuously saves all of the frames from the camera with minimal alterations.",
                         [0,"log_event"]),
                 "saving": ("Saving button",
-                    "This is the main button which <b>starts or stops data streaming</b>. In addition, if frame <i>Limit</i>  is enabled, \
+                    "This is the main button which <b>starts or stops data streaming</b>. In addition, if frame <i>Limit</i>&nbsp; is enabled, \
                         the streaming can stop automatically after a given number of frames.",
                         [("e","saving")]),
                 "path": ("Base save path",
@@ -277,7 +281,7 @@ class TutorialBox(param_table.ParamTable):
                         ["path","browse"]),
                 "path_modifiers": ("Path modification",
                     ("These checkboxes <b>modify the save path</b> for more convenient data organization.<br> "
-                    "<i>Separate folder</i>  creates a separate folder for each new dataset, and <i>Add date/time</i>  "
+                    "<i>Separate folder</i>&nbsp; creates a separate folder for each new dataset, and <i>Add date/time</i>&nbsp; "
                     "automatically appends current date and time to the entered base path to avoid duplicate file names."),
                         ["make_folder","add_datetime"]),
                 "duplicate_name": ("Duplicate name behavior",
@@ -290,7 +294,7 @@ class TutorialBox(param_table.ParamTable):
                         ["format"]),
                 "batch_size": ("Dataset size",
                     ("Here you can <b>limit the number of frames per dataset</b>. By default, the streaming is continuous until manually stopped, "
-                    "but if you want to save a defined number of frames, you can activate the <i>Limit</i>  button and specify the limit."),
+                    "but if you want to save a defined number of frames, you can activate the <i>Limit</i>&nbsp; button and specify the limit."),
                         ["batch_size"]),
                 "filesplit": ("File splitting",
                     ("This lets you <b>split the frames into several files</b>. This is useful for very large datasets, where having a single "
@@ -298,7 +302,7 @@ class TutorialBox(param_table.ParamTable):
                         ["filesplit"]),
                 "pretrigger_buffer": ("Pretrigger buffer",
                     ("Here you can control the <b>pretrigger buffer</b> parameters. If enabled, it always keeps in RAM a given number of previous frames, "
-                    "and stores them when the saving is started. This effectively lets you start saving data before you press <i>Saving</i>  button, "
+                    "and stores them when the saving is started. This effectively lets you start saving data before you press <i>Saving</i>&nbsp; button, "
                     "which is useful for recording of rare or fast events."),
                         ["pretrigger_size","pretrigger_clear"]),
                 "save_settings": ("Settings saving",
@@ -307,20 +311,20 @@ class TutorialBox(param_table.ParamTable):
                         [("e","save_settings")]),
                 "event_log": ("Event log",
                     ("Here you can <b>generate an event log</b>. This is a separate text file, which records the entered message together with its time and frame index "
-                    "whenever you press <i>Log event</i>  button."),
+                    "whenever you press <i>Log event</i>&nbsp; button."),
                         ["event_msg","log_event"]),
                 "snapshot": ("Snapshot saving",
                     ("In addition to streaming raw camera data, you can also <b>save snapshots of displayed images</b>. It saves the images exactly as displayed "
                     "including all of the processing, e.g., background subtraction or filters. However, it only saves a single image."),
                         [("snap_header",0),"snap_format"]),
                 "snap": ("Snap button",
-                    "This button takes the snapshot. Unlike the <i>Saving</i>  button which start or stops streaming, <i>Snap</i>  immediately saves a single frame.",
+                    "This button takes the snapshot. Unlike the <i>Saving</i>&nbsp; button which start or stops streaming, <i>Snap</i>&nbsp; immediately saves a single frame.",
                         [("e","snap_displayed")]),
                 "snapshot_path": ("Snapshot save path",
                     "These controls determine the <b>snapshot save path</b>. Their meaning is exactly the same as the corresponding streaming settings.",
                         ["snap_path","snap_add_datetime"]),
                 "snapshot_use_main_path": ("Snapshot save path",
-                    "Alternatively, you can choose to <b>use the main streaming path</b>. In this case, the snapshot path will simply add <i>_snapshot</i>  suffix to it.",
+                    "Alternatively, you can choose to <b>use the main streaming path</b>. In this case, the snapshot path will simply add <i>_snapshot</i>&nbsp; suffix to it.",
                         [("e","default_snap_path")]),
                 "snapshot_source": ("Snapshot source",
                     "In case there are several image display tabs, here you can <b>choose the image display to save</b>.",
@@ -344,8 +348,8 @@ class TutorialBox(param_table.ParamTable):
                     "In this case, saving can continue indfinitely."),
                         [cont]),
                 "saving_process_cont": ("Saving process",
-                    ("If the camera data rate is larger than the drive rate, the buffer gets gradually filled. Once it gets overfilled, the data can be lost. "
-                    "If there frames in the buffer by the time saving is done (either manually, or upon receiving the specified number of frames), "
+                    ("If the camera data rate is larger than the drive speed, the buffer gets gradually filled. Once it gets overfilled, the data can be lost. "
+                    "If there are frames in the buffer by the time saving is stopped (either manually, or upon reaching the specified number of frames), "
                     "writing to the drive will continue until the buffer is empty. If the new saving is started in the meantime, these frames will be lost."),
                         [cont]),
                 "received": ("Received frames",
@@ -419,13 +423,13 @@ class TutorialBox(param_table.ParamTable):
                     "Finally, here you can <b>enable or disable prebinning</b>.",
                         ["bin_enabled"]),
                 "bgsub/overview": ("Background subtraction",
-                    "This is the basic <b>background subtraction</b> control. It is only applied the displayed frame, and has no effect on the saved data.",
+                    "This is the basic <b>background subtraction</b> control. It is only applied to the displayed frame, and has no effect on the saved data.",
                         [cont]),
                 "bgsub/method": ("Background subtraction / Method",
                     "First, you can select the <b>background calculation method</b>. There are two different modes: snapshot and running.",
                         ["method"]),
                 "bgsub/method_snapshot": ("Background subtraction / Snapshot",
-                    ("<b>Snapshot</b> accumulates several frames, combines them using the <i>mode</i>  below and stores as a single fixed background frame. "
+                    ("<b>Snapshot</b> accumulates several frames, combines them using the <i>mode</i>&nbsp; below and stores as a single fixed background frame. "
                     "This method is appropriate when the background does not change with time."),
                         ["method"]),
                 "bgsub/method_running": ("Background subtraction / Running",
@@ -434,12 +438,12 @@ class TutorialBox(param_table.ParamTable):
                         ["method"]),
                 "bgsub/comb_mode": ("Background subtraction / Combination",
                     ("Here you control <b>combination parameters</b>: number of frames to combine to get a background frame and the combination method. "
-                    "Typically one uses either <i>Median</i>  or <i>Mean</i>; the first is more robust to outliers, but the second is much faster. "
-                    "However, depending on the application, <i>Min</i>  can be more appropriate."),
+                    "Typically one uses either <i>Median</i>&nbsp; or <i>Mean</i>; the first is more robust to outliers, but the second is much faster. "
+                    "However, depending on the application, <i>Min</i>&nbsp; can be more appropriate."),
                         ["comb_count","comb_mode"]),
                 "bgsub/grab": ("Background subtraction / Grabbing",
-                    ("If you use <i>Snapshot</i>  subtraction method, here you can <b>start grabbing the background</b>. As soon as this button is pressed, "
-                    "the next <i>Frames count</i>  frames are grabbed and combined to form the background."),
+                    ("If you use <i>Snapshot</i>&nbsp; subtraction method, here you can <b>start grabbing the background</b>. As soon as this button is pressed, "
+                    "the next <i>Frames count</i>&nbsp; frames are grabbed and combined to form the background."),
                         ["grab_background"]),
                 "bgsub/save": ("Background subtraction / Saving",
                     ("Since background subtraction does not affect the saved data, snapshot subtraction effect can be lost. "
@@ -482,7 +486,7 @@ class TutorialBox(param_table.ParamTable):
                         ["params"]),
                 "loading": ("Loading and unloading",
                     ("Here you <b>select the filter and load it</b>. When a new filter is loaded, the current one is automatically unloaded and all its accumulated information is cleared. "
-                    "You can also <i>Load</i>  the same filter to effectively reload it to, e.g., reset the accumulated buffers."),
+                    "You can also <i>Load</i>&nbsp; the same filter to effectively reload it to, e.g., reset the accumulated buffers."),
                         ["params/filter_id","params/load_filter","params/unload_filter"]),
                 "selection": ("Custom filters",
                     ("If you add <b>custom-designed filters</b>, they will automatically show up in the selection. The process of adding custom filters is described in the "
@@ -538,7 +542,7 @@ class TutorialBox(param_table.ParamTable):
                 "dead_time": ("Dead time",
                     ("In addition, you can also define the <b>dead time</b> for this trigger. Typically when image trigger is used, several consecutive images can trigger saving. "
                     "To avoid multiple triggers, you can define the dead time, which is the time after the trigger during which new triggers are ignored. "
-                    "Usually you want this time to be at least as large as the length of your dataset."),
+                    "Usually you want this time to be at least as large as the length of your video."),
                         ["dead_time"]),
                 "enable": ("Enable",
                     "Finally this button lets you <b>start or stop the saving trigger routine</b>.",
