@@ -76,6 +76,7 @@ class StandaloneFrame(container.QWidgetContainer):
     @controller.exsafe
     def setup(self, settings, cam_name):
         super().setup(layout="hbox")
+        self.ctl.res_mgr=controller.sync_controller(resource_manager_thread)
         
         self.cam_kind=camera_kinds[settings["cameras",cam_name,"kind"]]
         self.cam_name=cam_name

@@ -32,17 +32,11 @@ class ActivityIndicator_GUI(container.QWidgetContainer):
         self.params.add_padding(stretch=1)
         # Timer
         self.add_timer_event("update_pinds",self.update_pinds,period=0.5)
-        self.ctl.add_thread_method("add_activity",self.add_activity)
         self.ctl.add_thread_method("update_activity_status",self.update_activity_status)
     def start(self):
         self.update_pinds()
         super().start()
 
-    def add_activity(self, group, name, caption=None, short_cap=None, order=None, ctl=None):
-        """Add a new activity indicator withing the given group and name"""
-        self.resource_manager.cs.add_resource("process_activity",group+"/"+name,ctl=ctl,
-            caption=caption,short_cap=short_cap,order=order)
-        self.update_pinds()
     def update_activity_status(self, group, name, status):
         """Update an activity indicator status"""
         self.resource_manager.csi.update_resource("process_activity",group+"/"+name,status=status)

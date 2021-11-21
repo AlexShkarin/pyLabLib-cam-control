@@ -46,9 +46,8 @@ class FramePreproccessBinning_GUI(container.QGroupBoxContainer):
         self.params.layout().setColumnStretch(1,0)
         for ctl in ["spat_bin_x","spat_bin_y","time_bin"]:
             self.params.w[ctl].setMaximumWidth(70)
-    def start(self):
-        self.ctl.call_thread_method("add_activity","processing","binning",caption="Binning",short_cap="Bin",order=0)
-        super().start()
+        self.ctl.res_mgr.cs.add_resource("process_activity","processing/binning",
+            caption="Binning",short_cap="Bin",order=0)
     def enable_binning(self, enable):
         self.image_preprocessor.ca.enable_binning(enable)
         self.ctl.call_thread_method("update_activity_status","processing","binning",status="on" if enable else "off")

@@ -50,9 +50,8 @@ class FrameProccess_GUI(container.QGroupBoxContainer):
         # Timer
         self.add_timer_event("recv_parameters",self.recv_parameters,period=0.5)
         self.setEnabled(False)
-    def start(self):
-        self.ctl.call_thread_method("add_activity","processing","background",caption="Background subtraction",short_cap="Bg",order=1)
-        super().start()
+        self.ctl.res_mgr.cs.add_resource("process_activity","processing/background",
+            caption="Background subtraction",short_cap="Bg",order=1)
 
 
     @controller.exsafe

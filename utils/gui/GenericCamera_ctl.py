@@ -1,4 +1,3 @@
-from pylablib.core.utils import general
 from pylablib.core.thread import controller
 from pylablib.core.gui.widgets import container, param_table
 from pylablib.gui.widgets import range_controls
@@ -504,10 +503,11 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
         param_table.StatusTable.setup(self,"status_table")
         self.cam_ctl=ctl
         with self.using_new_sublayout("header","grid"):
-            self.add_text_label("cam_name",label="Name:")
-            self.w["cam_name"].setMaximumWidth(190)
-            self.add_text_label("cam_kind",label="Kind:")
-            self.w["cam_kind"].setMaximumWidth(190)
+            self.add_text_label("cam_name",label="Name:  ")
+            self.w["cam_name"].setMaximumWidth(180)
+            self.add_text_label("cam_kind",label="Kind:  ")
+            self.w["cam_kind"].setMaximumWidth(180)
+            self.add_padding("horizontal",location=(0,"next"),stretch=1)
         self.add_spacer(5)
         def set_connection_style(v):
             self.w["connection"].setStyleSheet("background: gold; font-weight: bold; color: black" if v=="Disconnected" else "")
