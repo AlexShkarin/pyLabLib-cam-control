@@ -3,6 +3,16 @@
 Change log
 ============================
 
+Version 2.1.0
+----------------------------
+
+* Added tutorial.
+* Added activity indicator.
+* Implemented color themes.
+* Added IDS uEye and Princeton Instruments cameras.
+* Slightly reorganized GUI.
+* Minor bug fixes, wider cameras support.
+
 Version 2.0.1
 ----------------------------
 
