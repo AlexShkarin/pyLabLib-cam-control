@@ -33,6 +33,11 @@ General parameters
     | *Values*: ``True``, ``False``
     | *Default*: ``False``
 
+``interface/color_theme``
+    | Color theme (based of `qdarkstyle <https://github.com/ColinDuquesnoy/QDarkStyleSheet>`__).
+    | *Values*: ``dark``, ``light``, ``standard`` (standard Windows style)
+    | *Default*: ``dark``
+
 ``interface/plotter/binning/max_size``
     | Maximal size of the image shown in the plotter window (any image larger than this size gets binned). Only affect plotting, and only useful to speed up image display.
     | *Values*: any positive integer

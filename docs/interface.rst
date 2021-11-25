@@ -4,6 +4,15 @@ Detailed interface description
 ==============================
 
 
+.. _interface_tutorial:
+
+Tutorial
+-------------------------
+
+.. image:: interface_tutorial.png
+
+The first time you start the software, you are greeted with the tutorial. It walks you through the interface and the basic concepts. It is recommended that you take it at some point to get familiar with all of the software capabilities. If you want to revisit it, you can find it under the :ref:`Extra button <interface_footer>`.
+
 .. _interface_camera_settings:
 
 Camera control
@@ -44,7 +53,7 @@ Camera status
 The top half of the status table deals with the camera status:
 
 - ``Name``: camera name, as defined in the settings file
-- ``Kind``: camera kind; usually, the camera interface kind, e.g., ``AndorSDK2`` or ``UC480``
+- ``Kind``: camera kind; usually, the camera interface kind, e.g., ``Andor iXON`` or ``Thorlabs uc480 / IDS uEye``
 - ``Connection``: shows whether camera is connected or not. Normally the camera should always be connected. It is only disconnected if it has been disconnected manually (by pressing ``Disconnect`` button on the camera control), or if the software couldn't connect to the camera on the startup. The latter usually means that the camera is turned off, disconnected, or used by a different program
 - ``Acquisition``: acquisition status
 - ``Frames acquired``: number of frames acquired by the camera in the current acquisition session, i.e., since the last press of the ``Start Acquisition`` button or the last change of parameters
@@ -68,7 +77,7 @@ Image display
 
 The image control is based on `pyqtgraph <http://www.pyqtgraph.org/>`_ ``ImageView`` control, which is used for displaying the image and the intensity histogram. In addition, there are some controls to change the image appearance and to enable additional features:
 
-- ``Binning``, ``Background subtraction``, ``Filter``, etc.: quick overview of all processing steps for the displayed frame
+- ``Binning``, ``Background subtraction``, ``Filter`` (above the image): quick overview of all processing steps for the displayed frame
 - ``Image size``: displays image size in pixels
 - ``Flip X``, ``Flip Y``, ``Transpose``: correspondingly, flips the image along the given axis, or transposes it (flips along the diagonal); note that these settings only affect display, and do not change the way images are saved
 - ``Normalize``: controls whether the image levels are automatically normalized to cover the full image range, or if they stay fixed
@@ -78,9 +87,9 @@ The image control is based on `pyqtgraph <http://www.pyqtgraph.org/>`_ ``ImageVi
 - ``Auto histogram range``: controls whether the histogram plot is rescaled with every new frame; this is different from the ``Normalize`` option, which control whether the image level range (shown with a transparent box in the histogram) gets similarly rescaled
 - ``Show lines``: controls whether the green cross is shown in the plot; it can be used to mark or extract positions of features in the image
 - ``X``, ``Y``: enable or disable individual lines and control their positions; note that the coordinates are always given in the displayed image coordinate system, i.e., after flips and transpose are applied
+- ``Center lines``: move the cross to the center of the images
 - ``Show line cuts``: when activated, shows a small additional plot with line cuts along the displayed lines
 - ``Line cut width``: if more than 1, it specifies a band thickness to average for a single line cut; this might reduce noisiness of the cuts
-- ``Center lines``: move the cross to the center of the images
 - ``Updating``: controls whether the image view updates on the new frames, or simply shows the last frame; can be used to improve performance, or to closer inspect a single image
 - ``Single``: when pressed, grabs a single image and stops updating
 
@@ -96,7 +105,7 @@ Saving control
 
 Here the :ref:`saving <pipeline_saving>` parameters, such as path, format, and number of frames to save, are controlled:
 
-- ``File name``: path for saving the frames. If the containing folder does not exist, it is created automatically; if the extension is not specified, it is added automatically. Note that if ``Add date/time`` is activated, the actual path will be somewhat different.
+- ``Path``: path for saving the frames. If the containing folder does not exist, it is created automatically; if the extension is not specified, it is added automatically. Note that if ``Add date/time`` is activated, the actual path will be somewhat different.
 - ``Separate folder``: if activated, then the supplied path is treated as a folder, and all of the data is stored inside under standard names (``frames.bin`` or ``frames.tiff`` for main frames data, ``settings.dat`` for settings, etc.) This option allows for better data organizing when each dataset has multiple files (e.g., main data, settings, frame info, background, several split files).
 - ``Add date/time``: if activated, create a unique name by appending current date and time to the specified path. By default, the date and time are added as a suffix, but this behavior can be changed in the :ref:`settings file <settings_file_general>`.
 - ``On duplicate name``: determines what happens if the files with the specified name already exists; can be ``Rename`` (add a numeric suffix to make a new unique name), ``Overwrite`` (overwrite the existing data), or ``Append`` (append the existing data)
@@ -129,22 +138,34 @@ The bottom half of the status table deals with the saving status:
 - ``Frames saved``: number of frames stored to the drive
 - ``Frames missed``: number of frames which were missed in saving; this includes both frames that were received but not saved (e.g., due to save buffer overfill) and frames missed on camera readout
 - ``Status line``: some cameras provide a status line within their frames (currently only PhotonFocus is supported). This status line allows one to do the last-minute check of the frames consistency, whose results are shown here.
-- ``RAM status``: fill status of the :ref:`save buffer <pipeline_saving_buffer>`
+- ``Saving buffer``: fill status of the :ref:`save buffer <pipeline_saving_buffer>`
 - ``Pretrigger frames``: fill status of the :ref:`pre-trigger buffer <pipeline_saving_pretrigger>`
-- ``Pretrigger skipped``: number of skipped frames in the pre-trigger buffer, which arose during the camera readout
 - ``Pretrigger RAM``: same as ``Pretrigger frames``, but expressed in memory size; useful to keep an eye on it in case the requested pre-trigger buffer size gets too large
+- ``Pretrigger skipped``: number of skipped frames in the pre-trigger buffer, which arose during the camera readout
 
 
-.. _interface_save_settings:
+.. _interface_activity:
 
-Settings saving
--------------------------
+Activity overview
+--------------------------
 
-.. image:: interface_load_settings.png
+.. image:: interface_activity.png
+
+In the upper right corner you can find indicators for the basic software activities: camera connection and acquisition, saving, background subtraction, filters, etc. These give a fast overview and help to, e.g., notices that some process is stopped (e.g., saving is done), or if it uses resources unnecessarily (e.g., running filters).
+
+
+.. _interface_footer:
+
+Settings saving and extras
+--------------------------
+
+.. image:: interface_footer.png
 
 The small box under the status allows to save the application settings to a file and subsequently load them. This lets you quickly switch between several working modes. ``Loading scope`` selects the loaded settings scope: only camera settings, everything except for the camera, or all settings.
 
 If you want to only load some of the settings, you can manually edit saved settings files. It is a human-readable table, and the parameter names are relatively straightforward to decipher. Note that you can also load settings from the ``*_settings.dat`` file accompanying the saved data, as long as it was obtained using the same version of the software. This may be useful to make sure that you save the data with exactly the same parameters as before.
+
+Furthermore, the ``Extra..`` button contains additional rarely used features, e.g., the :ref:`tutorial <interface_tutorial>`.
 
 
 .. _interface_processing:

@@ -66,11 +66,15 @@ The window is split into two parts. The left half shows the images, possibly wit
 
 The acquisition is started by pressing ``Start acquisition`` button. Note that you might need to adjust camera parameters (e.g., specify exposure, ROI, binning, pixel readout rate) to get reasonable image quality and performance.
 
-All of the entered values are automatically saved on exit and restored on the next restart. It is also possible to :ref:`save the settings to a file <interface_save_settings>` and load them later, which is helpful for working in several different regimes.
+All of the entered values are automatically saved on exit and restored on the next restart. It is also possible to :ref:`save the settings to a file <interface_footer>` and load them later, which is helpful for working in several different regimes.
+
+You can find more information either on the :ref:`interface page <interface>`, or in the built-in :ref:`tutorial <interface_tutorial>`.
 
 .. image:: overview_compact.png
 
 In case the interface takes too much space and does not fit in the screen, you can enable the compact mode in the :ref:`settings file <settings_file_general>`.
+
+The software uses a dark color theme by default. You can change it in the :ref:`settings file <settings_file_general>`.
 
 .. _overview_feedback:
 
