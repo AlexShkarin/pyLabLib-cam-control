@@ -557,6 +557,7 @@ if __name__=="__main__":
                     raise ValueError("unavailable camera {}".format(cam_name))
                 if ("css",cam_name) in settings:
                     settings.update(settings["css",cam_name])
+                app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
                 channel_accum=controller.sync_controller(channel_accumulator_thread)
                 channel_accum.cs.add_source("raw",src=preprocess_thread,tag="frames/new",sync=True,kind="raw")
                 channel_accum.cs.add_source("show",src=process_thread,tag="frames/new/show",sync=True,kind="show")

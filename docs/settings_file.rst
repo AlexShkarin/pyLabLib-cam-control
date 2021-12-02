@@ -87,7 +87,7 @@ Camera-related parameters
 In this section ``<camera name>`` stands for any camera name, e.g., ``ppimaq_0``. For example, ``cameras/<camera name>/params`` can become ``cameras/ppimaq_0/params``.
 
 ``css/<camera name>/<key>``
-    | Camera-specific parameter. Allows for any generic parameter (such as GUI parameters described above) to take different values for different cameras. For example, if there are two cameras named ``ppimaq_0`` and ``uc480_0`` defined in the file, then one can use ``css/ppimaq_0/saving/max_queue_ram`` to specify the saving buffer size for the first camera, and ``css/uc480_0/saving/max_queue_ram`` for the second one. Either of those can also be omitted, in which case the generic value (either specified or default) will be used instead.
+    | Camera-specific parameter. Allows for any generic parameter (such as GUI parameters described above) to take different values for different cameras. For example, if there are two cameras named ``ppimaq_0`` and ``uc480_0`` defined in the file, then one can use ``css/ppimaq_0/saving/max_queue_ram`` to specify the saving buffer size for the first camera, and ``css/uc480_0/saving/max_queue_ram`` for the second one. Either of those can also be omitted, in which case the generic value (either specified or default) will be used instead. Note that this option is not supported for ``select_camera``, ``cameras``, and ``dlls`` parameters (``css`` entries are ignored for those).
 
 ``select_camera``
     | Default selected camera. If this parameter is set, then this camera is automatically selected even if several cameras are present (i.e., the camera select menu doesn't show up). In this case, the only way to start other cameras is by using ``--camera`` :ref:`command line argument <command_line>`.
@@ -150,7 +150,8 @@ Specific system parameters
         - ``niimaq``: path to ``imaq.dll`` for NI IMAQ frame grabber interface. By default, search in ``System32`` folder, where it is placed after installing NI Vision Acquisition Software.
         - ``niimaqdx``: path to ``niimaqdx.dll`` for NI IMAQdx frame grabber interface. By default, search in ``System32`` folder, where it is placed after installing NI Vision Acquisition Software.
         - ``pco_sc2``: path to ``SC2_Cam.dll`` for PCO cameras. By default, search in the default location of pco.camware or pco.sdk.
+        - ``picam``; path to ``picam.dll`` for Princeton Instruments cameras. By default, search in the default location of Princeton Instruments PICam Runtime.
         - ``pfcam``: path to ``pfcam.dll`` for PhotonFocus cameras. By default, search in PFRemote folder specified in the ``PATH`` environment variable.
         - ``sisofgrab``: path to ``fglib5.dll`` for Silicon Software frame grabber interface. By default, search in Silicon Software Runtime Environment folder specified in the ``PATH`` environment variable.
         - ``thorlabs_tlcam``: path to ``thorlabs_tsi_camera_sdk.dll`` and related DLLs for Thorlabs Scientific Cameras. By default, search in the default location of ThorCam.
-        - ``uc480``: path to ``uc480_64.dll`` and related DLLs for uc480 camera interface. By default, search in the default location of ThorCam.
+        - ``uc480``: path to ``uc480_64.dll`` and related DLLs for uc480 camera interface or ``ueye_api_64.dll`` and related DLLs for uEye camera interface. By default, search in the default location of ThorCam and IDS uEye.
