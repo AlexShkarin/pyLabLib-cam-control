@@ -27,7 +27,7 @@ from pylablib.core.utils import dictionary, general as general_utils
 from pylablib import widgets as pll_widgets
 import pylablib
 
-from pylablib.core.gui import QtWidgets, QtCore, Signal
+from pylablib.core.gui import QtWidgets, QtCore, Signal, qtkwargs
 import pyqtgraph
 pyqtgraph.setConfigOptions(useOpenGL=True,antialias=False)
 
@@ -219,7 +219,7 @@ class StandaloneFrame(container.QWidgetContainer):
         with self.params_loading_settings.using_new_sublayout("scope","hbox"):
             self.params_loading_settings.add_combo_box("settings_load_scope",label="Loading scope:",options=["All","Camera","GUI"],index_values=["all","camera","gui"])
             self.params_loading_settings.add_spacer(1,30)
-            self.params_loading_settings.add_dropdown_button("extras","Extra...",options=["Tutorial"],index_values=["tutorial"])
+            self.params_loading_settings.add_dropdown_button("extras","Extra...",options=["Tutorial","Create camera shortcut"],index_values=["tutorial","cam_shortcut"])
         self.params_loading_settings.vs["load_settings"].connect(self.on_load_settings_button)
         self.params_loading_settings.vs["save_settings"].connect(self.on_save_settings_button)
         self.params_loading_settings.vs["extras"].connect(self.call_extra)
@@ -231,13 +231,15 @@ class StandaloneFrame(container.QWidgetContainer):
             
     @controller.exsafeSlot()
     def on_load_settings_button(self):
-        path,_=QtWidgets.QFileDialog.getOpenFileName(self,"Load GUI settings...",filter="Config Files (*.cfg);;Data Settings Files (*.dat);;All Files (*)",directory=self.v["defaults/settings_folder"])
+        path,_=QtWidgets.QFileDialog.getOpenFileName(self,"Load GUI settings...",filter="Config Files (*.cfg);;Data Settings Files (*.dat);;All Files (*)",
+            **{qtkwargs.file_dialog_dir:self.v["defaults/settings_folder"]})
         if path:
             self.v["defaults/settings_folder"]=os.path.split(path)[0]
             self.load_settings(path,scope=self.v["settings_load_scope"],cam_apply=True)
     @controller.exsafeSlot()
     def on_save_settings_button(self):
-        path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Load GUI settings...",filter="Config Files (*.cfg);;Data Settings Files (*.dat);;All Files (*)",directory=self.v["defaults/settings_folder"])
+        path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save GUI settings...",filter="Config Files (*.cfg);;Data Settings Files (*.dat);;All Files (*)",
+            **{qtkwargs.file_dialog_dir:self.v["defaults/settings_folder"]})
         if path:
             self.v["defaults/settings_folder"]=os.path.split(path)[0]
             self.save_settings(path)

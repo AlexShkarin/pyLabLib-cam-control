@@ -9,7 +9,7 @@ import subprocess
 
 ### Setup comman line arguments
 parser=argparse.ArgumentParser()
-parser.add_argument("--force","-f",action="store_true",help="clean the cam-control folder, but keep the python interpreter")
+parser.add_argument("--force","-f",action="store_true",help="clean the cam-control and pylablib folder, but keep the python interpreter")
 parser.add_argument("--full-force","-ff",action="store_true",help="completely clean and overwrite the destination folder")
 parser.add_argument("--interpreter","-i",metavar="INTERPRETER",help="python interpreter (a path to the set up interpreter folder)")
 parser.add_argument("--noarchive",action="store_true",help="skip creating the zip file")
@@ -21,11 +21,12 @@ pll_folder=os.path.abspath(module_utils.get_library_path())
 portable_folder=os.path.abspath(os.path.join(pll_folder,"..","tools","portable"))
 
 def prepare_dst(dst, force=False, full_force=False):
-    if force:
-        file_utils.retry_clean_dir(os.path.join(dst,"cam-control"))
-        file_utils.retry_clean_dir(os.path.join(dst,"docs"))
-    elif full_force:
+    if full_force:
         file_utils.retry_clean_dir(dst)
+    elif force:
+        file_utils.retry_clean_dir(os.path.join(dst,"cam-control"))
+        file_utils.retry_clean_dir(os.path.join(dst,"pylablib"))
+        file_utils.retry_clean_dir(os.path.join(dst,"docs"))
     elif os.path.exists(dst):
         print("destination path {} already exists; aborting".format(dst))
         sys.exit(1)

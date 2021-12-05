@@ -2,7 +2,7 @@ from pylablib.core.thread import controller
 from pylablib.core.gui.widgets import container, param_table
 from pylablib.core.utils import files as file_utils, general
 
-from pylablib.core.gui import QtWidgets
+from pylablib.core.gui import QtWidgets, qtkwargs
 
 import os
 import datetime
@@ -32,7 +32,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.params.add_text_edit("path",label="Path",value=default_path)
         @controller.exsafe
         def browse_path():
-            path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save camera data...",directory=self.v["path"])
+            path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save camera data...",**{qtkwargs.file_dialog_dir:self.v["path"]})
             if path:
                 self.v["path"]=path
         self.params.add_button("browse","Browse...",location=("next",2,1,1))
@@ -78,7 +78,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.params.add_text_edit("snap_path",label="Path",value=default_path,location=("next",0,1,3))
         @controller.exsafe
         def browse_snap_path():
-            path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save snapshot...",directory=self.v["snap_path"])
+            path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save snapshot...",**{qtkwargs.file_dialog_dir:self.v["snap_path"]})
             if path:
                 self.v["snap_path"]=path
         self.params.add_button("snap_browse","Browse...",location=("next",2,1,1))
