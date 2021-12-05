@@ -247,6 +247,12 @@ class StandaloneFrame(container.QWidgetContainer):
         self.tutorial_box=tutorial.TutorialBox()
         self.tutorial_box.setup(self)
         self.tutorial_box.show()
+    def create_camera_shortcut(self):
+        path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Create camera shortcut...",filter="Batch files (*.bat);;All Files (*)",
+            **{qtkwargs.file_dialog_dir:os.path.expanduser("~\\Desktop")})
+        if path:
+            with open(path,"w") as f:
+                f.write("cd {}\ncontrol.bat -c {}".format(os.path.abspath(".."),self.cam_name))
     @controller.exsafeSlot(object)
     def call_extra(self, value):
         if value=="tutorial":
@@ -257,6 +263,8 @@ class StandaloneFrame(container.QWidgetContainer):
                 self.show_tutorial_box()
             else:
                 self.tutorial_box.showNormal()
+        if value=="cam_shortcut":
+            self.create_camera_shortcut()
 
     _ext_controller_names={"camera":cam_thread,"processor":process_thread,"preprocessor":preprocess_thread,"saver":save_thread,"snap_saver":snap_save_thread,
         "slowdown":slowdown_thread,"channel_accumulator":channel_accumulator_thread,"settings_manager":settings_manager_thread,"resource_manager":resource_manager_thread}
