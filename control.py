@@ -38,7 +38,7 @@ import threading
 
 from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
-from utils.gui import tutorial, color_theme
+from utils.gui import tutorial, color_theme, settings_editor
 from utils import services, devthread
 import plugins
 
@@ -174,6 +174,7 @@ class StandaloneFrame(container.QWidgetContainer):
             lambda: self.windowState()==QtCore.Qt.WindowMaximized, lambda v: self.showMaximized() if v else None, add_indicator=False)
         self.add_virtual_element("defaults/settings_folder",value="",add_indicator=False)
         self.tutorial_box=None
+        self.settings_editor=None
 
         # Setup plugins
         plugin_tab=self.control_tabs.add_tab("plugins","Plugins",gui_values_path="plugins",layout="grid")
@@ -219,7 +220,8 @@ class StandaloneFrame(container.QWidgetContainer):
         with self.params_loading_settings.using_new_sublayout("scope","hbox"):
             self.params_loading_settings.add_combo_box("settings_load_scope",label="Loading scope:",options=["All","Camera","GUI"],index_values=["all","camera","gui"])
             self.params_loading_settings.add_spacer(1,30)
-            self.params_loading_settings.add_dropdown_button("extras","Extra...",options=["Tutorial","Create camera shortcut"],index_values=["tutorial","cam_shortcut"])
+            self.params_loading_settings.add_dropdown_button("extras","Extra...",
+                options=["Tutorial","Create camera shortcut","Preferences"],index_values=["tutorial","cam_shortcut","settings_editor"])
         self.params_loading_settings.vs["load_settings"].connect(self.on_load_settings_button)
         self.params_loading_settings.vs["save_settings"].connect(self.on_save_settings_button)
         self.params_loading_settings.vs["extras"].connect(self.call_extra)
@@ -244,9 +246,15 @@ class StandaloneFrame(container.QWidgetContainer):
             self.v["defaults/settings_folder"]=os.path.split(path)[0]
             self.save_settings(path)
     def show_tutorial_box(self):
-        self.tutorial_box=tutorial.TutorialBox()
+        self.tutorial_box=tutorial.TutorialBox(self)
         self.tutorial_box.setup(self)
         self.tutorial_box.show()
+    def show_settings_editor(self):
+        self.settings_editor=settings_editor.SettingsEditor(self)
+        if self.settings_editor.setup(self):
+            self.settings_editor.show()
+        else:
+            self.settings_editor=None
     def create_camera_shortcut(self):
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Create camera shortcut...",filter="Batch files (*.bat);;All Files (*)",
             **{qtkwargs.file_dialog_dir:os.path.expanduser("~\\Desktop")})
@@ -265,6 +273,15 @@ class StandaloneFrame(container.QWidgetContainer):
                 self.tutorial_box.showNormal()
         if value=="cam_shortcut":
             self.create_camera_shortcut()
+        if value=="settings_editor":
+            if self.settings_editor is None:
+                self.show_settings_editor()
+            elif not self.settings_editor.isVisible():
+                self.settings_editor.close()
+                self.show_settings_editor()
+            else:
+                self.settings_editor.showNormal()
+
 
     _ext_controller_names={"camera":cam_thread,"processor":process_thread,"preprocessor":preprocess_thread,"saver":save_thread,"snap_saver":snap_save_thread,
         "slowdown":slowdown_thread,"channel_accumulator":channel_accumulator_thread,"settings_manager":settings_manager_thread,"resource_manager":resource_manager_thread}
@@ -532,6 +549,7 @@ if __name__=="__main__":
             detect.update_settings_file(argvp.config_file,verbose=True)
             settings=loadfile.load_dict(argvp.config_file)
         settings["runtime/root_folder"]=os.path.abspath(".") if __name__=="__main__" else ""
+        settings["runtime/settings_src"]=os.path.abspath(argvp.config_file)
         ncams=len(settings.get("cameras",[]))
         if ncams==0: # Show a message and exit
             print("No cameras in the configuration file")
