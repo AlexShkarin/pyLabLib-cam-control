@@ -13,7 +13,9 @@ class TutorialBox(param_table.ParamTable):
     def setup(self, main_frame):
         super().setup("tutorial_box",add_indicator=False)
         self.setWindowTitle("Tutorial")
-        self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlag(QtCore.Qt.Dialog)
+        self.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint,False)
+        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint,False)
         self.add_text_label("caption",location=(0,0,1,3))
         self.w["caption"].setStyleSheet("font: bold")
         self.add_text_label("hint",location=(1,1,1,3))
