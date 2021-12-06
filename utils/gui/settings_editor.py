@@ -50,11 +50,9 @@ class SettingsEditor(widgets.QWidgetContainer):
                 self.w[n].setFixedWidth(100)
         self.display_settings()
         self.hide()
+        self.layout().setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
         return True
     
-    def show(self):
-        super().show()
-        self.setFixedSize(self.size())
     @exsafeSlot()
     def save_close(self):
         """Save parameters and close the window"""
@@ -65,7 +63,7 @@ class SettingsEditor(widgets.QWidgetContainer):
     def decorate_parameter(self, table: widgets.ParamTable, name, default, descfunc=None):
         """Add parameter decoration: description label and (if necessary) enable checkbox"""
         vname="value/"+name
-        table.add_text_label("desc/"+name,"",location=(-1,3,1,1))
+        table.add_text_label("desc/"+name,"",location=(-1,4,1,1))
         if descfunc is None:
             descfunc=table.h["value",name].repr_value
         @exsafe
@@ -78,7 +76,6 @@ class SettingsEditor(widgets.QWidgetContainer):
         if hasattr(table,"camera"):
             if default is not None:
                 table.add_check_box("enable/"+name,"",location=(-1,0,1,1))
-                table.w["enable/"+name].setMaximumWidth(20)
                 @exsafe
                 def on_enable(value):
                     table.set_enabled(vname,value)
@@ -96,6 +93,12 @@ class SettingsEditor(widgets.QWidgetContainer):
                 pname="css/{}/{}".format(table.camera,name)
             self.defined_settings[pname]=(table,name)
         else:
+            w=QtWidgets.QCheckBox("",parent=table)  # dummy checkbox as a workaround for aligning tabs layouts
+            p=w.sizePolicy()
+            p.setRetainSizeWhenHidden(True)
+            w.setSizePolicy(p)
+            table.add_to_layout(w,location=(-1,0,1,1))
+            w.hide()
             self.defined_settings[name]=(table,name)
             display_desc(table.v[vname])
     def add_bool_parameter(self, table: widgets.ParamTable, name, label, default=False, description=("Off","On")):
@@ -121,11 +124,12 @@ class SettingsEditor(widgets.QWidgetContainer):
     def setup_settings(self, table: widgets.ParamTable):
         table.setup(add_indicator=False)
         cam_table=hasattr(table,"camera")
-        table.add_decoration_label("Override" if cam_table else "",location=(0,0,1,2))
+        table.add_decoration_label("Override global" if cam_table else "",location=(0,0,1,2))
         table.add_spacer(0,30,location=(0,0,1,1))
         table.add_spacer(0,200,location=(0,1,1,1))
         table.add_spacer(0,150,location=(0,2,1,1))
-        table.add_spacer(0,250,location=(0,3,1,1))
+        table.add_spacer(0,10,location=(0,3,1,1))
+        table.add_spacer(0,250,location=(0,4,1,1))
         self.add_bool_parameter(table,"interface/compact","Compact interface")
         self.add_choice_parameter(table,"interface/color_theme","Color theme",{"standard":"Standard","dark":"Dark","light":"Light"},default="dark")
         self.add_bool_parameter(table,"interface/expandable_edits","Expandable text boxes",default=True)
@@ -149,7 +153,7 @@ class SettingsEditor(widgets.QWidgetContainer):
                 limits=(50,None),default=100)
             self.add_float_parameter(table,"camera/params/misc/buffer/min_size/time","Frame buffer (s)",
                 limits=(0.5,None),default=1.0)
-        table.set_column_stretch([0,0,0,1])
+        table.set_column_stretch([0,0,0,0,1])
         table.add_padding(kind="vertical",location=("next",1,1,1),stretch=1)
 
     def get_displayed_parameter(self, name, value):

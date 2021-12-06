@@ -38,6 +38,11 @@ General parameters
     | *Values*: ``dark``, ``light``, ``standard`` (standard Windows style)
     | *Default*: ``dark``
 
+``interface/expandable_edits``
+    | Enable or disable expandable text boxes for paths and event logs.
+    | *Values*: ``True``, ``False``
+    | *Default*: ``True``
+
 ``interface/plotter/binning/max_size``
     | Maximal size of the image shown in the plotter window (any image larger than this size gets binned). Only affect plotting, and only useful to speed up image display.
     | *Values*: any positive integer
@@ -154,4 +159,5 @@ Specific system parameters
         - ``pfcam``: path to ``pfcam.dll`` for PhotonFocus cameras. By default, search in PFRemote folder specified in the ``PATH`` environment variable.
         - ``sisofgrab``: path to ``fglib5.dll`` for Silicon Software frame grabber interface. By default, search in Silicon Software Runtime Environment folder specified in the ``PATH`` environment variable.
         - ``thorlabs_tlcam``: path to ``thorlabs_tsi_camera_sdk.dll`` and related DLLs for Thorlabs Scientific Cameras. By default, search in the default location of ThorCam.
-        - ``uc480``: path to ``uc480_64.dll`` and related DLLs for uc480 camera interface or ``ueye_api_64.dll`` and related DLLs for uEye camera interface. By default, search in the default location of ThorCam and IDS uEye.
+        - ``uc480``: path to ``uc480_64.dll`` and related DLLs for uc480 camera interface. By default, search in the default location of ThorCam.
+        - ``ueye``: path to ``ueye_api_64.dll`` and related DLLs for uEye camera interface. By default, search in the default location of IDS Software Suite.

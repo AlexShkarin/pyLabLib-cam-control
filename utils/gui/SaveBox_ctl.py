@@ -24,6 +24,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.record_in_progress=False
         self.popup_on_missing_frames=self.cam_ctl.settings.get("interface/popup_on_missing_frames",True)
         self.expandable_edits=self.cam_ctl.settings.get("interface/expandable_edits",True)
+        self.compact_interface=self.cam_ctl.settings.get("interface/compact",False)
         
         self.params=self.add_child("params",param_table.ParamTable(self))
         self.params.setup(add_indicator=False)
@@ -31,8 +32,6 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         default_path=os.path.expanduser("~\\Documents\\frames")
         with self.params.using_new_sublayout("save_path","hbox",location=("next",0,1,3)):
             self.params.add_text_edit("path",label="Path",value=default_path)
-            if self.expandable_edits:
-                self.params.w["path"].set_expandable(200,200)
         @controller.exsafe
         def browse_path():
             path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save camera data...",**{qtkwargs.file_dialog_dir:self.v["path"]})
@@ -70,8 +69,6 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.vs["saving"].connect(lambda v: self.cam_ctl.toggle_saving(mode="full",start=v))
         self.params.add_decoration_label("Event log message:",location=("next",0,1,3))
         self.params.add_text_edit("event_msg",value="",location=("next",0,1,3))
-        if self.expandable_edits:
-            self.params.w["event_msg"].set_expandable(200,200)
         self.params.add_button("log_event","Log event",location=("next",1,1,1))
         self.params.vs["log_event"].connect(self.cam_ctl.write_event_log)
         self.params.add_spacer(5)
@@ -81,8 +78,6 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.params.add_check_box("default_snap_path","Use main path")
         with self.params.using_new_sublayout("snap_save_path","hbox"):
             self.params.add_text_edit("snap_path",label="Path",value=default_path,location=("next",0,1,3))
-            if self.expandable_edits:
-                self.params.w["snap_path"].set_expandable(200,200)
         @controller.exsafe
         def browse_snap_path():
             path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Save snapshot...",**{qtkwargs.file_dialog_dir:self.v["snap_path"]})
@@ -118,6 +113,10 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.params.add_padding()
             self.params.add_decoration_label("as")
             self.params.add_combo_box("snap_format",options=["Raw binary","TIFF"],index_values=["raw","tiff"],value="tiff")
+        if self.expandable_edits:
+            borders=(250,50) if self.compact_interface else (200,200)
+            for p in ["path","snap_path","event_msg"]:
+                self.params.w[p].set_expandable(*borders)
         self.setEnabled(False)
 
     # Build a dictionary of camera parameters from the controls
