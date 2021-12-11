@@ -20,10 +20,10 @@ if __name__=="__main__":
     os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
     sys.path.append(os.path.abspath("."))  # set current folder to the file location and add it to the search path
 
-from pylablib.core.thread import controller, synchronizing
+from pylablib.core.thread import controller, synchronizing, threadprop
 from pylablib.core.gui.widgets import container, param_table
 from pylablib.core.fileio import loadfile, savefile
-from pylablib.core.utils import dictionary, general as general_utils
+from pylablib.core.utils import dictionary, general as general_utils, files as file_utils
 from pylablib import widgets as pll_widgets
 import pylablib
 
@@ -476,13 +476,15 @@ class StandaloneFrame(container.QWidgetContainer):
 
 
 class CamSelectFrame(param_table.ParamTable):
-    @controller.exsafe
     def setup(self, settings):
         super().setup(name="camera_select",add_indicator=False)
+        self.settings=settings
+        self.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint,False)
+        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint,False)
         self.setMinimumWidth(300)
-        self.setWindowTitle("Camera select...")
+        self.setWindowTitle("Select camera...")
         self.selected=False # prevents double-call on multiple clicks
-        cameras=settings["cameras"]
+        cameras=self.settings["cameras"]
         cam_ids=list(cameras)
         cam_names=[cameras[k].get("display_name",k) for k in cam_ids]
         self.add_combo_box("camera",label="Select camera:",options=cam_names,index_values=cam_ids)
@@ -490,15 +492,65 @@ class CamSelectFrame(param_table.ParamTable):
         self.button_box.setStandardButtons(QtWidgets.QDialogButtonBox.Close|QtWidgets.QDialogButtonBox.Ok)
         self.button_box.setCenterButtons(True)
         self.add_to_layout(self.button_box,location=("next",0,1,"end"))
-        self.button_box.accepted.connect(lambda: self.on_select(True))
-        self.button_box.rejected.connect(lambda: self.on_select(False))
-    camera_selected=Signal(object)
+        self.button_box.accepted.connect(controller.exsafe(lambda: self.on_select(True)))
+        self.button_box.rejected.connect(controller.exsafe(lambda: self.on_select(False)))
+    camera_selected=Signal()
     def on_select(self, accepted):
         if not self.selected:
             self.selected=True
             if accepted:
-                self.camera_selected.emit(self.v["camera"])
+                self.settings["select_camera"]=self.v["camera"]
+                self.camera_selected.emit()
             self.close()
+
+
+
+class MissingSettingsFrame(param_table.ParamTable):
+    def setup(self, path):
+        super().setup(name="missing_settings",add_indicator=False)
+        self.path=path
+        self.setWindowTitle("Import config...")
+        self.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint,False)
+        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint,False)
+        self.setFixedWidth(300)
+        self.setFixedHeight(80)
+        self.selected=False # prevents double-call on multiple clicks
+        w=self.add_decoration_label(
+                "Would you like to import config from a previous version, or to proceed with cameras detection?",
+                location=(0,0,1,"end"))
+        w.setWordWrap(True)
+        with self.using_new_sublayout("buttons","hbox"):
+            self.add_button("import","Import")
+            self.vs["import"].connect(self.import_settings)
+            self.add_button("detect","Proceed")
+            self.vs["detect"].connect(self.detect_cameras)
+    def _copy_settings(self, src, dst):
+        file_utils.retry_copy(src,dst)
+        srcdir=os.path.split(src)[0]
+        dstdir=os.path.split(dst)[0]
+        if os.path.exists(os.path.join(srcdir,"plugins")):
+            file_utils.retry_copy_dir(os.path.join(srcdir,"plugins"),os.path.join(dstdir,"plugins"),overwrite=False)
+        if os.path.exists(os.path.join(srcdir,_defaults_filename)):
+            file_utils.retry_copy(os.path.join(srcdir,_defaults_filename),os.path.join(dstdir,_defaults_filename))
+    @controller.exsafe
+    def import_settings(self):
+        if not self.selected:
+            self.selected=True
+            path,_=QtWidgets.QFileDialog.getOpenFileName(self,"Import config...",filter="Config Files (*.cfg);;All Files (*)")
+            if path:
+                self.hide()
+                self._copy_settings(path,self.path)
+                start_app(ask_on_no_cam=False)
+            self.close()
+    @controller.exsafe
+    def detect_cameras(self):
+        if not self.selected:
+            self.selected=True
+            self.hide()
+            import detect
+            print("No cameras in the config file; running autodetect")
+            detect.update_settings_file(self.path,verbose=True)
+            start_app(ask_on_no_cam=False)
 
 
 ### Camera kinds ###
@@ -531,99 +583,104 @@ parser.add_argument("--config-file","-cf", help="configuration file path",metava
 argvp=parser.parse_args()
 
 
+
+def load_config(path):
+    """Load settings config file and add real-time data"""
+    if os.path.exists(path):
+        settings=loadfile.load_dict(path)
+        if "dlls" in settings:
+            for k,v in settings["dlls"].items():
+                pylablib.par["devices/dlls",k]=v
+    else:
+        settings=dictionary.Dictionary()
+    settings["runtime/root_folder"]=os.path.abspath(".") if __name__=="__main__" else ""
+    settings["runtime/settings_src"]=os.path.abspath(path)
+    return settings
+
+def start_threads(settings):
+    """Start and partially set up auxiliary threads"""
+    services.FrameBinningThread(preprocess_thread,kwargs={"src":cam_thread,"tag_in":"frames/new"}).start()
+    services.FrameSlowdownThread(slowdown_thread,kwargs={"src":preprocess_thread,"tag_in":"frames/new"}).start()
+    services.FrameProcessorThread(process_thread,kwargs={"src":slowdown_thread,"tag_in":"frames/new"}).start()
+    services.ChannelAccumulator(channel_accumulator_thread,kwargs={"settings":settings.get("interface/trace_plotter")}).start()
+    services.FrameSaveThread(save_thread,kwargs={"src":preprocess_thread,"tag":"frames/new","settings_mgr":settings_manager_thread,"frame_processor":process_thread}).start()
+    services.FrameSaveThread(snap_save_thread,kwargs={"src":"any","tag":"frames/new/snap","settings_mgr":settings_manager_thread}).start()
+    services.SettingsManager(settings_manager_thread).start()
+    services.ResourceManager(resource_manager_thread).start()
+    channel_accum=controller.sync_controller(channel_accumulator_thread)
+    channel_accum.cs.add_source("raw",src=preprocess_thread,tag="frames/new",sync=True,kind="raw")
+    channel_accum.cs.add_source("show",src=process_thread,tag="frames/new/show",sync=True,kind="show")
+    image_saver=controller.sync_controller(save_thread)
+    image_saver.ca.setup_queue_ram(settings.get("saving/max_queue_ram",4*2**30))
+
+@controller.exsafe
+def start_app(ask_on_no_cam=True):
+    """Start the application: determine the camera, create and set up frame"""
+    app=threadprop.get_app()
+    settings=load_config(argvp.config_file)
+    app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
+    if "cameras" not in settings and ask_on_no_cam:
+        missing_settings_form=MissingSettingsFrame()
+        missing_settings_form.setup(argvp.config_file)
+        missing_settings_form.show()
+        return
+    cams=settings.get("cameras",{})
+    if len(cams)==0: # Show a message and exit
+        print("No cameras in the configuration file")
+        input("Press Enter to continue")
+        return
+    select_cameras=[argvp.camera,settings.pop("select_camera",None)]
+    if len(cams)==1:
+        select_cameras.append(list(cams)[0])
+    for c in select_cameras:
+        if c is not None and c in cams:
+            settings["select_camera"]=c
+            break
+
+    start_threads(settings)
+    main_form=StandaloneFrame()
+    @controller.exsafe
+    def start_main_form():
+        cam_name=settings.get("select_camera")
+        if cam_name is None or cam_name not in settings["cameras"]:
+            raise ValueError("unavailable camera {}".format(cam_name))
+        if ("css",cam_name) in settings:
+            settings.update(settings["css",cam_name])
+        app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
+        cam_kind=camera_kinds[settings["cameras",cam_name,"kind"]]
+        cam_ctl=cam_kind.devthread(cam_thread,kwargs=settings["cameras",cam_name,"params"].as_dict())
+        cam_ctl.start()
+        main_form.setup(settings=settings,cam_name=cam_name)
+        settings_ctl=controller.sync_controller(settings_manager_thread)
+        settings_ctl.ca.update_settings("software/version",version)
+        settings_ctl.ca.add_source("cam",cam_ctl.cs.get_full_info)
+        settings_ctl.ca.add_source("cam/settings",cam_ctl.cs.get_settings)
+        def get_cam_counters():
+            counters=cam_ctl.v["frames"]
+            if "last_frame" in counters:
+                del counters["last_frame"]
+            return counters
+        settings_ctl.ca.add_source("cam/cnt",get_cam_counters)
+        main_form.start()
+        main_form.show()
+    if "select_camera" in settings:
+        start_main_form()
+    else:
+        select_form=CamSelectFrame()
+        select_form.setup(settings=settings)
+        select_form.camera_selected.connect(start_main_form)
+        select_form.show()
+
+
 ### Main execution ###
 if __name__=="__main__":
-    with controller.exint(): # catching exception
-        # Load config file, or generate a new one
-        if os.path.exists(argvp.config_file):
-            settings=loadfile.load_dict(argvp.config_file)
-            cameras_present="cameras" in settings
-            if "dlls" in settings:
-                for k,v in settings["dlls"].items():
-                    pylablib.par["devices/dlls",k]=v
-        else:
-            cameras_present=False
-        if not cameras_present:
-            import detect
-            print("No cameras in the config file; running autodetect")
-            detect.update_settings_file(argvp.config_file,verbose=True)
-            settings=loadfile.load_dict(argvp.config_file)
-        settings["runtime/root_folder"]=os.path.abspath(".") if __name__=="__main__" else ""
-        settings["runtime/settings_src"]=os.path.abspath(argvp.config_file)
-        ncams=len(settings.get("cameras",[]))
-        if ncams==0: # Show a message and exit
-            print("No cameras in the configuration file")
-            input("Press Enter to continue")
-        else:
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling,True)
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps,True)
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_Use96Dpi,True)
+    app=QtWidgets.QApplication(sys.argv)
 
-            QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling,True)
-            QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps,True)
-            QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_Use96Dpi,True)
+    gui=controller.get_gui_controller()
+    gui.started.connect(start_app)
+    app.exec_()
 
-            # Create forms
-            app=QtWidgets.QApplication(sys.argv)
-            app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
-            main_form=StandaloneFrame()
-            select_form=CamSelectFrame()
-
-            # Create and launch thread controllers
-            gui=controller.get_gui_controller()
-            services.FrameBinningThread(preprocess_thread,kwargs={"src":cam_thread,"tag_in":"frames/new"}).start()
-            services.FrameSlowdownThread(slowdown_thread,kwargs={"src":preprocess_thread,"tag_in":"frames/new"}).start()
-            services.FrameProcessorThread(process_thread,kwargs={"src":slowdown_thread,"tag_in":"frames/new"}).start()
-            services.ChannelAccumulator(channel_accumulator_thread,kwargs={"settings":settings.get("interface/trace_plotter")}).start()
-            services.FrameSaveThread(save_thread,kwargs={"src":preprocess_thread,"tag":"frames/new","settings_mgr":settings_manager_thread,"frame_processor":process_thread}).start()
-            services.FrameSaveThread(snap_save_thread,kwargs={"src":"any","tag":"frames/new/snap","settings_mgr":settings_manager_thread}).start()
-            services.SettingsManager(settings_manager_thread).start()
-            services.ResourceManager(resource_manager_thread).start()
-
-            @controller.exsafeSlot(object)
-            def start_main_form(cam_name=None):
-                settings_ctl=controller.sync_controller(settings_manager_thread)
-                cam_name=cam_name or settings["select_camera"]
-                if cam_name not in settings["cameras"]:
-                    raise ValueError("unavailable camera {}".format(cam_name))
-                if ("css",cam_name) in settings:
-                    settings.update(settings["css",cam_name])
-                app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
-                channel_accum=controller.sync_controller(channel_accumulator_thread)
-                channel_accum.cs.add_source("raw",src=preprocess_thread,tag="frames/new",sync=True,kind="raw")
-                channel_accum.cs.add_source("show",src=process_thread,tag="frames/new/show",sync=True,kind="show")
-                cam_kind=camera_kinds[settings["cameras",cam_name,"kind"]]
-                cam_ctl=cam_kind.devthread(cam_thread,kwargs=settings["cameras",cam_name,"params"].as_dict())
-                cam_ctl.start()
-                main_form.setup(settings=settings,cam_name=cam_name)
-                settings_ctl.ca.update_settings("software/version",version)
-                settings_ctl.ca.add_source("cam",cam_ctl.cs.get_full_info)
-                settings_ctl.ca.add_source("cam/settings",cam_ctl.cs.get_settings)
-                def get_cam_counters():
-                    counters=cam_ctl.v["frames"]
-                    if "last_frame" in counters:
-                        del counters["last_frame"]
-                    return counters
-                settings_ctl.ca.add_source("cam/cnt",get_cam_counters)
-                image_saver=controller.sync_controller(save_thread)
-                image_saver.ca.setup_queue_ram(settings.get("saving/max_queue_ram",4*2**30))
-                main_form.start()
-                main_form.show()
-            @controller.exsafeSlot()
-            def start_select_form():
-                select_form.setup(settings=settings)
-                select_form.camera_selected.connect(start_main_form)
-                select_form.show()
-
-            # Figuring out default camera
-            ncams=len(settings.get("cameras",[]))
-            if ncams==1:
-                settings["select_camera"]=list(settings["cameras"].keys())[0]
-            if argvp.camera:
-                settings["select_camera"]=argvp.camera
-
-            # Setting up a form start event
-            if "select_camera" in settings:
-                gui.started.connect(start_main_form)
-            else:
-                gui.started.connect(start_select_form)
-            # Start the GUI event loop
-            app.exec_()
     os.chdir(startdir)
