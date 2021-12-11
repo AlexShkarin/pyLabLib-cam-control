@@ -120,6 +120,7 @@ class TutorialBox(param_table.ParamTable):
             "saving":["overview","standard","saving","path","path_modifiers","format","batch_size","filesplit","pretrigger_buffer","save_settings","event_log",
                         "snapshot","snap","snapshot_path","snapshot_use_main_path","snapshot_source","snapshot_format"],
             "save_status":["overview","saving_process","saving_process_cont","received","saved","missed","status_line","saving_buffer","pretrigger"],
+            "extras":["overview","tutorial","cam_shortcut","preferences"],
             "processing":["overview","indicator","preproc/overview","preproc/spatial","preproc/temporal","preproc/dtype","preproc/enable",
                         "bgsub/overview","bgsub/method","bgsub/method_snapshot","bgsub/method_running","bgsub/comb_mode","bgsub/grab","bgsub/save","bgsub/enable",
                         "slowdown/overview","slowdown/source_fps","slowdown/slowdown_fps","slowdown/slowdown_buffer","slowdown/enable"]
@@ -379,6 +380,26 @@ class TutorialBox(param_table.ParamTable):
                     "The first two lines show its fill status in frames and in RAM size. In order to function properly, it should be completely filled. "
                     "The last line shows the number of skipped within the buffer; like with other such counters, ideally it should be zero."),
                         ["frames/pretrigger_frames","frames/pretrigger_skipped","frames/pretrigger_ram"]),
+            }
+        if chapter=="extras":
+            ch="Extras"
+            cont=self.main_frame
+            stages={
+                "overview": ("Overview",
+                    "As mentioned before, this button hides some rarely-used but still useful options",
+                        [("e","extras")]),
+                "tutorial": ("Tutorial",
+                    "The first option, <b>Tutorial</b>, displays this tutorial in case you want to revisit it.",
+                        [("e","extras")]),
+                "cam_shortcut": ("Camera shortcut",
+                    ("The second option, <b>Create camera shortcut</b>, lets you create a camera-specific shortcut (more precisely, a batch file) "
+                    "which skips the camera selection menu and immediately selects the current camera. This is convenient if you frequently use several cameras."),
+                        [("e","extras")]),
+                "preferences": ("Preferences",
+                    ("The last option, <b>Preferences</b>, lets you control general software settings and preferences such as color theme, "
+                    "file naming conventions, or various buffer sizes. Their detailed description is given in the "
+                    "<a href='https://pylablib-cam-control.readthedocs.io/en/latest/interface.html#settings-and-preferences'>documentation</a> (also available locally in <i>Docs</i>&nbsp; folder)."),
+                        [("e","extras")]),
             }
         if chapter=="processing":
             ch="On-line processing"
