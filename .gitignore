@@ -1,6 +1,7 @@
 logerr.txt
 logout.txt
 defaults*.cfg
+locals*.cfg
 settings-*.cfg
 
 local_python_cmd.bat

@@ -59,6 +59,7 @@ sys.stdout=StreamLogger("logout.txt",sys.stdout)
 
 version="2.1.0"
 _defaults_filename="defaults.cfg"
+_locals_filename="locals.cfg"
 
 cam_thread="camera"
 process_thread="frame_process"
@@ -81,6 +82,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.cam_kind=camera_kinds[settings["cameras",cam_name,"kind"]]
         self.cam_name=cam_name
         self.settings=settings
+        self.load_locals()
         self.gui_level="full"
         self.compact_interface=settings.get("interface/compact",False)
 
@@ -249,6 +251,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.tutorial_box=tutorial.TutorialBox(self)
         self.tutorial_box.setup(self)
         self.tutorial_box.show()
+        self.locals["tutorial_shown"]=True
     def show_settings_editor(self):
         self.settings_editor=settings_editor.SettingsEditor(self)
         if self.settings_editor.setup(self):
@@ -444,6 +447,10 @@ class StandaloneFrame(container.QWidgetContainer):
                 self.cam_ctl.send_parameters()
             return True
         return False
+    def load_locals(self):
+        self.locals=loadfile.load_dict(_locals_filename) if os.path.exists(_locals_filename) else dictionary.Dictionary()
+    def save_locals(self):
+        savefile.save_dict(self.locals,_locals_filename)
     @controller.exsafe
     def save_settings(self, path=None):
         if path is None:
@@ -460,15 +467,16 @@ class StandaloneFrame(container.QWidgetContainer):
     def start(self):
         self._sync_plugins()
         controller.sync_controller(cam_thread)
-        first_time=not self.load_settings(warn_if_missing=False)
+        self.load_settings(warn_if_missing=False)
         super().start()
         self._notify_plugins()
-        if first_time:
+        if not self.locals.get("tutorial_shown",False):
             self.show_tutorial_box()
     @controller.exsafeSlot()
     def stop(self):
         if self._running:
             self.save_settings()
+            self.save_locals()
         for plugin in list(self._running_plugins.values()):
             plugin.ctl.stop(sync=True)
         super().stop()
