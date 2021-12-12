@@ -57,7 +57,7 @@ sys.stdout=StreamLogger("logout.txt",sys.stdout)
 
 
 
-version="2.1.0"
+version="2.1.1"
 _defaults_filename="defaults.cfg"
 _locals_filename="locals.cfg"
 

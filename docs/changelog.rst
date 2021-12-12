@@ -3,6 +3,14 @@
 Change log
 ============================
 
+Version 2.1.1
+----------------------------
+
+* Added preferences editor.
+* Added option for importing settings from a previous software version.
+* Added creation of camera-specific shortcuts.
+* Minor GUI bugfixes.
+
 Version 2.1.0
 ----------------------------
 
