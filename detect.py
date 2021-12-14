@@ -15,9 +15,18 @@
 
 import os
 import sys
+import argparse
 if __name__=="__main__":
     os.chdir(os.path.join(".",os.path.split(sys.argv[0])[0]))
     sys.path.append(".")  # set current folder to the file location and add it to the search path
+    parser=argparse.ArgumentParser(description="Camera autodetection")
+    parser.add_argument("--silent","-s",help="silent execution",action="store_true")
+    parser.add_argument("--yes","-y",help="automatically confirm settings file overwrite",action="store_true")
+    parser.add_argument("--wait",help="show waiting message for 3 seconds in the end",action="store_true")
+    parser.add_argument("--config-file","-cf", help="configuration file path",metavar="FILE",default="settings.cfg")
+    args=parser.parse_args()
+    if not args.silent:
+        print("Detecting cameras...\n")
 
 from pylablib.devices import Andor, DCAM, IMAQdx, IMAQ, PhotonFocus, SiliconSoftware, PrincetonInstruments, PCO, uc480, Thorlabs
 from pylablib.core.utils import dictionary
@@ -25,7 +34,7 @@ from pylablib.core.fileio.loadfile import load_dict
 from pylablib.core.fileio.savefile import save_dict
 import pylablib
 
-import argparse
+import time
 
 
 def print_added_camera(name, desc):
@@ -189,13 +198,13 @@ def detect_PhotonFocus(verbose=False):
     if verbose: print("Checking potential PFRemote interfaces {}\n".format(", ".join(["{}/{}".format(d.manufacturer,d.port) for _,d in pf_cams])))
     cams=[]
     for p,cdesc in pf_cams:
-        print("Checking interface {}/{} ... ".format(cdesc.manufacturer,cdesc.port),end="")
+        if verbose: print("Checking interface {}/{} ... ".format(cdesc.manufacturer,cdesc.port),end="")
         name=PhotonFocus.query_camera_name(p)
         if name is not None:
-            print("discovered camera {}".format(name))
+            if verbose: print("discovered camera {}".format(name))
             cams.append((p,cdesc))
         else:
-            print("not a camera")
+            if verbose: print("not a camera")
     cam_num=len(cams)
     if verbose: print("Found {} PhotonFocus camera{}".format(cam_num,"s" if cam_num>1 else ""))
     for p,cdesc in cams:
@@ -380,11 +389,10 @@ def detect_all(verbose=False):
     return cams
 
 
-def update_settings_file(cfg_path="settings.cfg", verbose=False, confirm=False):
+def update_settings_file(cfg_path="settings.cfg", verbose=False, confirm=False, wait=False):
     settings=detect_all(verbose=verbose)
     if not settings:
-        if verbose:
-            print("Couldn't detect any supported cameras")
+        if verbose: print("Couldn't detect any supported cameras")
     else:
         do_save=True
         if os.path.exists(cfg_path):
@@ -399,22 +407,18 @@ def update_settings_file(cfg_path="settings.cfg", verbose=False, confirm=False):
                 settings=curr_settings
         if do_save:
             save_dict(settings,cfg_path)
-            if verbose:
-                print("Successfully generated config file {}".format(cfg_path))
+            if verbose: print("Successfully generated config file {}".format(cfg_path))
         else:
             return
     if confirm and not do_save:
         input()
+    elif wait:
+        time.sleep(3.)
 
 if __name__=="__main__":
-    parser=argparse.ArgumentParser(description="Camera autodetection")
-    parser.add_argument("--silent","-s",help="silent execution",action="store_true")
-    parser.add_argument("--yes","-y",help="automatically confirm settings file overwrite",action="store_true")
-    parser.add_argument("--config-file","-cf", help="configuration file path",metavar="FILE",default="settings.cfg")
-    args=parser.parse_args()
     if os.path.exists(args.config_file):
         settings=load_dict(args.config_file)
         if "dlls" in settings:
             for k,v in settings["dlls"].items():
                 pylablib.par["devices/dlls",k]=v
-    update_settings_file(cfg_path=args.config_file,verbose=not args.silent,confirm=not (args.silent or args.yes))
+    update_settings_file(cfg_path=args.config_file,verbose=not args.silent,confirm=not (args.silent or args.yes),wait=args.wait)

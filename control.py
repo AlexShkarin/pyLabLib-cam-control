@@ -27,7 +27,7 @@ from pylablib.core.utils import dictionary, general as general_utils, files as f
 from pylablib import widgets as pll_widgets
 import pylablib
 
-from pylablib.core.gui import QtWidgets, QtCore, Signal, qtkwargs
+from pylablib.core.gui import QtWidgets, QtCore, QtGui, Signal, qtkwargs
 import pyqtgraph
 pyqtgraph.setConfigOptions(useOpenGL=True,antialias=False)
 
@@ -35,12 +35,14 @@ import argparse
 import datetime
 import collections
 import threading
+import subprocess
 
 from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
 from utils.gui import tutorial, color_theme, settings_editor
 from utils import services, devthread
 import plugins
+import splash
 
 
 ### Redirecting console / errors to file logs ###
@@ -57,7 +59,7 @@ sys.stdout=StreamLogger("logout.txt",sys.stdout)
 
 
 
-version="2.1.1"
+from utils import version
 _defaults_filename="defaults.cfg"
 _locals_filename="locals.cfg"
 
@@ -89,6 +91,7 @@ class StandaloneFrame(container.QWidgetContainer):
         ### Setup GUI
         cam_display_name=settings["cameras",self.cam_name].get("display_name",self.cam_name)
         self.setWindowTitle("{} control".format(cam_display_name))
+        self.setWindowIcon(QtGui.QIcon("icon.ico"))
         self.cam_ctl=camera_control.GenericCameraCtl(
             cam_thread=cam_thread,frame_src_thread=process_thread,preprocess_thread=preprocess_thread,
             save_thread=save_thread,snap_save_thread=snap_save_thread,resource_manager_thread=resource_manager_thread,
@@ -491,6 +494,7 @@ class CamSelectFrame(param_table.ParamTable):
         self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint,False)
         self.setMinimumWidth(300)
         self.setWindowTitle("Select camera...")
+        self.setWindowIcon(QtGui.QIcon("icon.ico"))
         self.selected=False # prevents double-call on multiple clicks
         cameras=self.settings["cameras"]
         cam_ids=list(cameras)
@@ -518,6 +522,7 @@ class MissingSettingsFrame(param_table.ParamTable):
         super().setup(name="missing_settings",add_indicator=False)
         self.path=path
         self.setWindowTitle("Import config...")
+        self.setWindowIcon(QtGui.QIcon("icon.ico"))
         self.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint,False)
         self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint,False)
         self.setFixedWidth(300)
@@ -555,9 +560,8 @@ class MissingSettingsFrame(param_table.ParamTable):
         if not self.selected:
             self.selected=True
             self.hide()
-            import detect
-            print("No cameras in the config file; running autodetect")
-            detect.update_settings_file(self.path,verbose=True)
+            pythonexec=os.path.join(os.path.split(sys.executable)[0],"python.exe")
+            subprocess.call([pythonexec,"detect.py","--yes","--wait"])
             start_app(ask_on_no_cam=False)
 
 
@@ -624,19 +628,22 @@ def start_threads(settings):
 @controller.exsafe
 def start_app(ask_on_no_cam=True):
     """Start the application: determine the camera, create and set up frame"""
+    splash.update_splash_screen(True,msg="Launching the application...")
     app=threadprop.get_app()
     settings=load_config(argvp.config_file)
-    app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
     if "cameras" not in settings and ask_on_no_cam:
         missing_settings_form=MissingSettingsFrame()
         missing_settings_form.setup(argvp.config_file)
         missing_settings_form.show()
+        splash.update_splash_screen(False)
         return
     cams=settings.get("cameras",{})
     if len(cams)==0: # Show a message and exit
-        print("No cameras in the configuration file")
-        input("Press Enter to continue")
-        return
+        splash_screen=splash.get_splash_screen()
+        QtWidgets.QMessageBox.warning(splash_screen,"No cameras",
+            "No cameras detected. Make sure that the cameras are connected, turned on, and not used by other software.",QtWidgets.QMessageBox.Ok)
+        controller.stop_app(code=1)
+    app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
     select_cameras=[argvp.camera,settings.pop("select_camera",None)]
     if len(cams)==1:
         select_cameras.append(list(cams)[0])
@@ -649,6 +656,7 @@ def start_app(ask_on_no_cam=True):
     main_form=StandaloneFrame()
     @controller.exsafe
     def start_main_form():
+        splash.update_splash_screen(msg="Connecting to the camera...")
         cam_name=settings.get("select_camera")
         if cam_name is None or cam_name not in settings["cameras"]:
             raise ValueError("unavailable camera {}".format(cam_name))
@@ -671,6 +679,7 @@ def start_app(ask_on_no_cam=True):
         settings_ctl.ca.add_source("cam/cnt",get_cam_counters)
         main_form.start()
         main_form.show()
+        splash.update_splash_screen(False)
     if "select_camera" in settings:
         start_main_form()
     else:
@@ -678,17 +687,21 @@ def start_app(ask_on_no_cam=True):
         select_form.setup(settings=settings)
         select_form.camera_selected.connect(start_main_form)
         select_form.show()
+        splash.update_splash_screen(False)
 
 
 ### Main execution ###
-if __name__=="__main__":
+def prepare_app():
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling,True)
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps,True)
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_Use96Dpi,True)
-    app=QtWidgets.QApplication(sys.argv)
-
+    return QtWidgets.QApplication([])
+def execute(app=None):
+    if app is None:
+        app=prepare_app()
     gui=controller.get_gui_controller()
     gui.started.connect(start_app)
     app.exec_()
-
+if __name__=="__main__":
+    execute()
     os.chdir(startdir)

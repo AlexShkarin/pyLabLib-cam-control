@@ -25,7 +25,6 @@ def prepare_dst(dst, force=False, full_force=False):
         file_utils.retry_clean_dir(dst)
     elif force:
         file_utils.retry_clean_dir(os.path.join(dst,"cam-control"))
-        file_utils.retry_clean_dir(os.path.join(dst,"pylablib"))
         file_utils.retry_clean_dir(os.path.join(dst,"docs"))
     elif os.path.exists(dst):
         print("destination path {} already exists; aborting".format(dst))
@@ -44,8 +43,8 @@ pll_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__")
 def copy_pll(dst):
     file_utils.retry_copy_dir(pll_folder,os.path.join(dst,"cam-control","pylablib"),folder_filter=pll_copy_folder_filter,file_filter=pll_copy_file_filter)
 include_plugins=["filter","server","trigger_save"]
-control_copy_file_filter=string_utils.StringFilter(include=r".*\.py|LICENSE|requirements.txt$",exclude=r"pack\.py$")
-control_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__|\.git|\.vscode|docs")
+control_copy_file_filter=string_utils.StringFilter(include=r".*\.py|LICENSE|requirements.txt|splash.png|icon.ico$",exclude=r"pack\.py$")
+control_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__|\.git|\.vscode|docs|launcher")
 def copy_control(dst):
     dst_control=os.path.join(dst,"cam-control")
     file_utils.retry_copy_dir(control_folder,dst_control,folder_filter=control_copy_folder_filter,file_filter=control_copy_file_filter)
@@ -57,17 +56,18 @@ def copy_docs(dst):
     subprocess.call(["python.exe","make-sphinx.py","-c"],cwd="docs")
     file_utils.retry_copy_dir(os.path.join("docs","_build","html"),os.path.join(dst,"docs"))
 def make_bat(dst):
-    with open(os.path.join(dst,"control.bat"),"w") as f:
-        f.write("python\\python.exe cam-control\\control.py %*\n")
-    with open(os.path.join(dst,"detect.bat"),"w") as f:
-        f.write("python\\python.exe cam-control\\detect.py %*\n")
     with open(os.path.join(dst,"python","local-python.bat"),"w") as f:
         f.write("set PATH=%CD%;%CD%\\Scripts;%PATH%\ncmd /k")
+def make_launcher(dst):
+    subprocess.call([os.path.join(dst,"python","python.exe"),"-m","pip","install","."],cwd="launcher")
+    file_utils.retry_copy(os.path.join(dst,"python","Scripts","run-control-splash.exe"),os.path.join(dst,"control.exe"))
+    file_utils.retry_copy(os.path.join(dst,"python","Scripts","run-control.exe"),os.path.join(dst,"control-console.exe"))
+    file_utils.retry_copy(os.path.join(dst,"python","Scripts","run-detect.exe"),os.path.join(dst,"detect.exe"))
 
 def get_control_version():
-    with open("control.py","r") as f:
+    with open(os.path.join("utils","__init__.py"),"r") as f:
         for ln in f.readlines():
-            m=re.match(r'version\s*="([\d.]+)"',ln.strip())
+            m=re.match(r'version\s*=\s*"([\d.]+)"',ln.strip())
             if m:
                 return m[1]
 control_version=get_control_version()
@@ -90,6 +90,8 @@ print("copying pylablib")
 copy_pll(clargs.dst)
 print("copying cam-control")
 copy_control(clargs.dst)
+print("preparing executable files")
+make_launcher(clargs.dst)
 print("copying docs")
 copy_docs(clargs.dst)
 print("preparing batch files")
