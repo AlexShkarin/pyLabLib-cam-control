@@ -36,6 +36,7 @@ import datetime
 import collections
 import threading
 import subprocess
+import win32com.client
 
 from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
@@ -262,11 +263,16 @@ class StandaloneFrame(container.QWidgetContainer):
         else:
             self.settings_editor=None
     def create_camera_shortcut(self):
-        path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Create camera shortcut...",filter="Batch files (*.bat);;All Files (*)",
+        path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Create camera shortcut...",filter="Shortcuts (*.lnk);;All Files (*)",
             **{qtkwargs.file_dialog_dir:os.path.expanduser("~\\Desktop")})
         if path:
-            with open(path,"w") as f:
-                f.write("cd {}\ncontrol.bat -c {}".format(os.path.abspath(".."),self.cam_name))
+            shell=win32com.client.Dispatch("WScript.Shell")
+            shortcut=shell.CreateShortcut(path)
+            shortcut.TargetPath=os.path.abspath(os.path.join("..","control.exe"))
+            shortcut.WorkingDirectory=os.path.abspath(os.path.join(".."))
+            shortcut.Arguments='-c "{}"'.format(self.cam_name)
+            shortcut.IconLocation=os.path.abspath("icon.ico")
+            shortcut.Save()
     @controller.exsafeSlot(object)
     def call_extra(self, value):
         if value=="tutorial":

@@ -392,7 +392,7 @@ class TutorialBox(param_table.ParamTable):
                     "The first option, <b>Tutorial</b>, displays this tutorial in case you want to revisit it.",
                         [("e","extras")]),
                 "cam_shortcut": ("Camera shortcut",
-                    ("The second option, <b>Create camera shortcut</b>, lets you create a camera-specific shortcut (more precisely, a batch file) "
+                    ("The second option, <b>Create camera shortcut</b>, lets you create a camera-specific shortcut "
                     "which skips the camera selection menu and immediately selects the current camera. This is convenient if you frequently use several cameras."),
                         [("e","extras")]),
                 "preferences": ("Preferences",

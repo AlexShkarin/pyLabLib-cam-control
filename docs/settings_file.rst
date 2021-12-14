@@ -9,7 +9,7 @@ Configuring
 Command line arguments
 -------------------------
 
-``control.bat`` takes several command line arguments to customize the software launch sequence:
+``control.exe`` takes several command line arguments to customize the software launch sequence:
 
     - ``--camera <camera name>``, ``-c <camera name>``: select a specific camera to control; ``<camera name>`` is the name of the camera used within the settings file, such as ``ppimaq_0``. Normally, if several cameras are available, the software first shows the dropdown menu to choose the camera to control. However, if this argument is specified, this camera will be selected automatically. Can be used to, e.g., create separate shortcuts for controlling different cameras.
     - ``--config-file <file>``, ``-cf <file>``: specify a configuration file if it is different from the default ``settings.cfg``. The path is always specified relative to ``control.py`` location.
