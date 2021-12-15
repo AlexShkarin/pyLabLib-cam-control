@@ -5,6 +5,7 @@ import os
 import sys
 import re
 import subprocess
+import distutils.ccompiler
 
 
 ### Setup comman line arguments
@@ -13,6 +14,7 @@ parser.add_argument("--force","-f",action="store_true",help="clean the cam-contr
 parser.add_argument("--full-force","-ff",action="store_true",help="completely clean and overwrite the destination folder")
 parser.add_argument("--interpreter","-i",metavar="INTERPRETER",help="python interpreter (a path to the set up interpreter folder)")
 parser.add_argument("--noarchive",action="store_true",help="skip creating the zip file")
+parser.add_argument("--nocompile",action="store_true",help="skip re-compiling executables (it is only necessary when python file names or icons are changed)")
 parser.add_argument("dst",metavar="DST",help="destination folder")
 clargs=parser.parse_args()
 
@@ -58,11 +60,17 @@ def copy_docs(dst):
 def make_bat(dst):
     with open(os.path.join(dst,"python","local-python.bat"),"w") as f:
         f.write("set PATH=%CD%;%CD%\\Scripts;%PATH%\ncmd /k")
-def make_launcher(dst):
-    subprocess.call([os.path.join(dst,"python","python.exe"),"-m","pip","install","."],cwd="launcher")
-    file_utils.retry_copy(os.path.join(dst,"python","Scripts","run-control-splash.exe"),os.path.join(dst,"control.exe"))
-    file_utils.retry_copy(os.path.join(dst,"python","Scripts","run-control.exe"),os.path.join(dst,"control-console.exe"))
-    file_utils.retry_copy(os.path.join(dst,"python","Scripts","run-detect.exe"),os.path.join(dst,"detect.exe"))
+def make_launcher(dst, recompile=True):
+    compiler=distutils.ccompiler.new_compiler()
+    for fs in [["run-control-splash","icon.rc"],["run-control"],["run-detect"]]:
+        ps=[os.path.join("launcher",f) for f in fs]
+        if recompile or not os.path.exists(ps[0]+".exe"):
+            sps=[p+".c" if not p.endswith(".rc") else p for p in ps]
+            obj=compiler.compile(sps)
+            compiler.link_executable(obj,ps[0])
+    file_utils.retry_copy(os.path.join("launcher","run-control-splash.exe"),os.path.join(dst,"control.exe"))
+    file_utils.retry_copy(os.path.join("launcher","run-control.exe"),os.path.join(dst,"control-console.exe"))
+    file_utils.retry_copy(os.path.join("launcher","run-detect.exe"),os.path.join(dst,"detect.exe"))
 
 def get_control_version():
     with open(os.path.join("utils","__init__.py"),"r") as f:
@@ -91,7 +99,7 @@ copy_pll(clargs.dst)
 print("copying cam-control")
 copy_control(clargs.dst)
 print("preparing executable files")
-make_launcher(clargs.dst)
+make_launcher(clargs.dst,recompile=not clargs.nocompile)
 print("copying docs")
 copy_docs(clargs.dst)
 print("preparing batch files")

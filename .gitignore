@@ -7,6 +7,10 @@ settings-*.cfg
 local_python_cmd.bat
 local_python_interp_cmd.bat
 
+launcher/*.exe
+launcher/*.obj
+launcher/*.res
+
 Thumbs.db
 
 # Byte-compiled / optimized / DLL files

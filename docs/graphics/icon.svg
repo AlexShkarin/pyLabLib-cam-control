@@ -30,12 +30,12 @@
      inkscape:pageshadow="2"
      inkscape:zoom="1.2319445"
      inkscape:cx="207.80156"
-     inkscape:cy="321.8489"
+     inkscape:cy="191.97293"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1017"
+     inkscape:window-height="1137"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
@@ -55,7 +55,8 @@
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="Background"
-     sodipodi:insensitive="true">
+     sodipodi:insensitive="true"
+     style="display:none">
     <rect
        style="fill:#5dc92e;fill-opacity:1;stroke:none;stroke-width:9.37502;stroke-linejoin:round"
        id="rect4651"
