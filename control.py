@@ -36,11 +36,12 @@ import datetime
 import collections
 import threading
 import subprocess
+import traceback
 import win32com.client
 
 from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
-from utils.gui import tutorial, color_theme, settings_editor
+from utils.gui import tutorial, color_theme, settings_editor, about
 from utils import services, devthread
 import plugins
 import splash
@@ -181,6 +182,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.add_virtual_element("defaults/settings_folder",value="",add_indicator=False)
         self.tutorial_box=None
         self.settings_editor=None
+        self.about_window=None
 
         # Setup plugins
         plugin_tab=self.control_tabs.add_tab("plugins","Plugins",gui_values_path="plugins",layout="grid")
@@ -227,7 +229,8 @@ class StandaloneFrame(container.QWidgetContainer):
             self.params_loading_settings.add_combo_box("settings_load_scope",label="Loading scope:",options=["All","Camera","GUI"],index_values=["all","camera","gui"])
             self.params_loading_settings.add_spacer(1,30)
             self.params_loading_settings.add_dropdown_button("extras","Extra...",
-                options=["Tutorial","Create camera shortcut","Preferences"],index_values=["tutorial","cam_shortcut","settings_editor"])
+                options=["Tutorial","Create camera shortcut","Preferences","About"],
+                index_values=["tutorial","cam_shortcut","settings_editor","about"])
         self.params_loading_settings.vs["load_settings"].connect(self.on_load_settings_button)
         self.params_loading_settings.vs["save_settings"].connect(self.on_save_settings_button)
         self.params_loading_settings.vs["extras"].connect(self.call_extra)
@@ -262,6 +265,10 @@ class StandaloneFrame(container.QWidgetContainer):
             self.settings_editor.show()
         else:
             self.settings_editor=None
+    def show_about_window(self):
+        self.about_window=about.AboutBox(self)
+        self.about_window.setup()
+        self.about_window.show()
     def create_camera_shortcut(self):
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Create camera shortcut...",filter="Shortcuts (*.lnk);;All Files (*)",
             **{qtkwargs.file_dialog_dir:os.path.expanduser("~\\Desktop")})
@@ -288,11 +295,13 @@ class StandaloneFrame(container.QWidgetContainer):
         if value=="settings_editor":
             if self.settings_editor is None:
                 self.show_settings_editor()
-            elif not self.settings_editor.isVisible():
-                self.settings_editor.close()
-                self.show_settings_editor()
             else:
                 self.settings_editor.showNormal()
+        if value=="about":
+            if self.about_window is None:
+                self.show_about_window()
+            else:
+                self.about_window.showNormal()
 
 
     _ext_controller_names={"camera":cam_thread,"processor":process_thread,"preprocessor":preprocess_thread,"saver":save_thread,"snap_saver":snap_save_thread,
@@ -535,13 +544,13 @@ class MissingSettingsFrame(param_table.ParamTable):
         self.setFixedHeight(80)
         self.selected=False # prevents double-call on multiple clicks
         w=self.add_decoration_label(
-                "Would you like to import config from a previous version, or to proceed with cameras detection?",
+                "Would you like to import config from a previous version, or to continue with camera detection?",
                 location=(0,0,1,"end"))
         w.setWordWrap(True)
         with self.using_new_sublayout("buttons","hbox"):
             self.add_button("import","Import")
             self.vs["import"].connect(self.import_settings)
-            self.add_button("detect","Proceed")
+            self.add_button("detect","Continue")
             self.vs["detect"].connect(self.detect_cameras)
     def _copy_settings(self, src, dst):
         file_utils.retry_copy(src,dst)
@@ -570,6 +579,27 @@ class MissingSettingsFrame(param_table.ParamTable):
             subprocess.call([pythonexec,"detect.py","--yes","--wait"])
             start_app(ask_on_no_cam=False)
 
+class ErrorBoxDisplay:
+    """Error box display, which handles error message popup upon exceptions"""
+    @controller.call_in_gui_thread
+    def _show_message_box(self, caption, message):
+        parent=splash.get_splash_screen()
+        if parent is None or not parent.isVisible():
+            parent=None
+            for w in threadprop.get_app().topLevelWidgets():
+                if w.isVisible():
+                    parent=w
+                    break
+        with controller.get_gui_controller().blocking_control_signals():
+            QtWidgets.QMessageBox.critical(parent,caption,message,QtWidgets.QMessageBox.Ok)
+    def show_message(self):
+        """Show error message dialog box"""
+        etype,exc,_=sys.exc_info()
+        if etype is not None:
+            err_msg="  "+"  ".join(traceback.format_exception_only(etype,exc))
+            post_msg="If the error keeps occuring, contact the developer."
+            self._show_message_box("Error","An error arose:\n\n{}\n{}".format(err_msg,post_msg))
+error_display=ErrorBoxDisplay()
 
 ### Camera kinds ###
 TCameraKind=collections.namedtuple("TCameraKind",["devthread","controller","status"])
@@ -706,6 +736,7 @@ def execute(app=None):
     if app is None:
         app=prepare_app()
     gui=controller.get_gui_controller()
+    controller.add_exception_hook("error_message",error_display.show_message,single_call=True)
     gui.started.connect(start_app)
     app.exec_()
 if __name__=="__main__":

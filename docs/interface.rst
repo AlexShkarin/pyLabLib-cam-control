@@ -178,6 +178,7 @@ The ``Extra...`` button contains additional rarely used features:
 - ``Tutorial``: interface and operation :ref:`tutorial <interface_tutorial>`, which automatically shows up during the first run of the software
 - ``Create camera shortcut``: if there are multiple cameras, this button allows to create a shortcut which connects to a particular camera. This skips the camera selection window on the application start and immediately runs the specific camera.
 - ``Preferences``: opens the :ref:`settings and preferences editor <interface_preferences>`.
+- ``About``: opens the ``About`` window with the version information and useful links.
 
 
 .. _interface_preferences:

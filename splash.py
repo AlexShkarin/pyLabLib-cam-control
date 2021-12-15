@@ -42,7 +42,6 @@ class SplashScreen(QtWidgets.QSplashScreen):
         self.layout().setContentsMargins(5,5,5,5)
         self.vlabel=QtWidgets.QLabel(self)
         self.vlabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignBottom)
-        self.vlabel.setWordWrap(True)
         self.vlabel.setText("PyLabLib cam-control\nVersion {}".format(version))
         self.vlabel.setStyle(self.current_style)
         self.layout().addWidget(self.vlabel)
