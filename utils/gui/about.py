@@ -23,8 +23,11 @@ class AboutBox(widgets.QFrameContainer):
             self.add_decoration_label("Documentation")
             link="https://pylablib-cam-control.readthedocs.io/"
             self.add_decoration_label("<a href='{link:}'>{link:}</a>".format(link=link),location=(-1,1)).setOpenExternalLinks(True)
-            self.add_decoration_label("Report problems")
-            link="https://github.com/AlexShkarin/pyLabLib-cam-control/issues"
+            self.add_decoration_label("Check for a new version")
+            link="https://pylablib-cam-control.readthedocs.io/en/latest/changelog.html"
+            self.add_decoration_label("<a href='{link:}'>{link:}</a>".format(link=link),location=(-1,1)).setOpenExternalLinks(True)
+            self.add_decoration_label("Report a problem")
+            link="https://github.com/SandoghdarLab/pyLabLib-cam-control/issues"
             self.add_decoration_label("<a href='{link:}'>{link:}</a>".format(link=link),location=(-1,1)).setOpenExternalLinks(True)
             self.add_decoration_label("E-mail")
             link="pylablib@gmail.com"

@@ -7,6 +7,8 @@ import re
 import subprocess
 import distutils.ccompiler
 
+from utils import version
+
 
 ### Setup comman line arguments
 parser=argparse.ArgumentParser()
@@ -51,6 +53,9 @@ def copy_control(dst):
     dst_control=os.path.join(dst,"cam-control")
     file_utils.retry_copy_dir(control_folder,dst_control,folder_filter=control_copy_folder_filter,file_filter=control_copy_file_filter)
     file_utils.retry_copy(os.path.join(control_folder,"settings_deploy.cfg"),os.path.join(dst_control,"settings.cfg"))
+    if version:
+        with open(os.path.join(dst_control,"settings.cfg"),"a") as f:
+            f.write("\ninfo/version\t{}".format(version))
     for f in file_utils.list_dir(os.path.join(dst_control,"plugins"),file_filter=r".*\.py").files:
         if f[:-3] not in include_plugins+["__init__","base"]:
             file_utils.retry_remove(os.path.join(dst_control,"plugins",f))
@@ -72,14 +77,7 @@ def make_launcher(dst, recompile=True):
     file_utils.retry_copy(os.path.join("launcher","run-control.exe"),os.path.join(dst,"control-console.exe"))
     file_utils.retry_copy(os.path.join("launcher","run-detect.exe"),os.path.join(dst,"detect.exe"))
 
-def get_control_version():
-    with open(os.path.join("utils","__init__.py"),"r") as f:
-        for ln in f.readlines():
-            m=re.match(r'version\s*=\s*"([\d.]+)"',ln.strip())
-            if m:
-                return m[1]
-control_version=get_control_version()
-zip_name="cam-control{}.zip".format("-"+control_version if control_version else "")
+zip_name="cam-control{}.zip".format("-"+version if version else "")
 def zip_dst(dst, zip_name):
     zip_path=os.path.join(dst,zip_name)
     if os.path.exists(zip_path):

@@ -61,7 +61,7 @@ sys.stdout=StreamLogger("logout.txt",sys.stdout)
 
 
 
-from utils import version
+from utils import version, compare_version
 _defaults_filename="defaults.cfg"
 _locals_filename="locals.cfg"
 
@@ -437,8 +437,10 @@ class StandaloneFrame(container.QWidgetContainer):
                 cam=settings.get("cfg/select_camera",None)
                 if ver is None:
                     warn_msg="settings file does not contain the software version"
-                elif ver!=version:
-                    warn_msg="settings file version ({}) is different from the current version ({})".format(ver,version)
+                elif compare_version(ver)=="?":
+                    warn_msg="unrecognized version {}".format(ver)
+                elif compare_version(ver)==">":
+                    warn_msg="settings file version ({}) is higher than the current version ({})".format(ver,version)
                 elif cam is None:
                     warn_msg="settings file does not contain the camera name"
                 elif cam!=self.cam_name:
@@ -553,6 +555,15 @@ class MissingSettingsFrame(param_table.ParamTable):
             self.add_button("detect","Continue")
             self.vs["detect"].connect(self.detect_cameras)
     def _copy_settings(self, src, dst):
+        ver=loadfile.load_dict(src).get("info/version")
+        cmp=compare_version(ver)
+        errmsg=None
+        if cmp=="?":
+            errmsg="unrecognized version in the settings file: {}".format(ver)
+        elif cmp==">":
+            errmsg="settings version {} is newer than the current version {}; some settings may not transfer correctly".format(ver,version)
+        if errmsg is not None:
+            QtWidgets.QMessageBox.warning(self,"Potential settings incompatibility","Warning: {}".format(errmsg),QtWidgets.QMessageBox.Ok)
         file_utils.retry_copy(src,dst)
         srcdir=os.path.split(src)[0]
         dstdir=os.path.split(dst)[0]

@@ -8,9 +8,9 @@ Overview
 Installation
 ------------------------- 
 
-Download the zip file with the `latest release <https://github.com/AlexShkarin/pylablib-cam-control/releases/latest/download/cam-control.zip>`__ and unpack it to the desired location. The software comes with its own isolated Python interpreter with all the basic packages installed, so no additional installations are necessary.
+Download the zip file with the `latest release <https://github.com/AlexShkarin/pylablib-cam-control/releases/latest/download/cam-control.zip>`__ and unpack it to the desired location. The software comes with its own isolated Python interpreter with all the basic packages installed, so no additional installations are necessary. Download links to older version are available on the :ref:`release history <changelog>` page.
 
-To run the software, simply execute ``control.exe``. On the first run it will suggest to either load ``settings.cfg`` file from the previous version, or to detect all connected supported cameras and store their connection parameters. Make sure that at this point all cameras are connected, turned on, and not used in any other software (e.g., Andor Solis, Hokawo, or NI MAX). If new cameras are added to the PC, they can be re-discovered by running ``detect.exe``.
+To run the software, simply execute ``control.exe``. On the first run it will suggest to either load settings file (``settings.cfg``) from the previous version, or to detect all connected supported cameras and store their connection parameters. Make sure that at this point all cameras are connected, turned on, and not used in any other software (e.g., Andor Solis, Hokawo, or NI MAX). If new cameras are added to the PC, they can be re-discovered by running ``detect.exe``.
 
 If only one camera is found, running ``control.exe`` will automatically connect to it. Otherwise, a dropdown menu will show up allowing selection of specific cameras.
 
