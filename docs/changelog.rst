@@ -3,6 +3,17 @@
 Release history
 ============================
 
+`Version 2.1.2 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.1.2/cam-control.zip>`__
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+2021-12-23
+
+* Graphics and UI update: added launcher executables, "About" windows, popup error messages.
+
+`Download <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.1.2/cam-control.zip>`__
+
+|
+
 `Version 2.1.1 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.1.1/cam-control.zip>`__
 ---------------------------------------------------------------------------------------------------------------------------------------------
 
