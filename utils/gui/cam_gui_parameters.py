@@ -319,22 +319,3 @@ class ROIGUIParameter(IGUIParameter):
         self.cam_roi=(roi[0],roi[1],(roi[4] if len(roi)>4 else 1)),(roi[2],roi[3],(roi[5] if len(roi)>5 else 1))
         self.on_changed()
         super().display(parameters)
-
-
-
-
-
-class PixelRateFloatGUIParameter(FloatGUIParameter):
-    """
-    Pixel rate parameter.
-
-    Same as the basic floating point parameter, but automatically updates limits upon setup.
-    """
-    def __init__(self, settings, indicator=False, cam_name=None, cam_range_name=None):
-        super().__init__(settings,"pixel_rate","Pixel rate (MHz)",limit=(0,None),indicator=indicator,factor=1E-6,cam_name=cam_name)
-        self.cam_range_name=cam_range_name
-    def setup(self, parameters, full_info):
-        super().setup(parameters,full_info)
-        if self.cam_range_name is not None and self.cam_range_name in full_info:
-            rmin,rmax=full_info[self.cam_range_name][:2]
-            self.base.w[self.gui_name].set_limiter((rmin*self.factor,rmax*self.factor))
