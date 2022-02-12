@@ -1,0 +1,3 @@
+from .loader import find_camera_descriptors
+
+camera_descriptors=find_camera_descriptors()
