@@ -15,7 +15,6 @@ class TriggerSavePlugin(base.IPlugin):
     def setup(self):
         self._last_save_timer=None
         self._last_save_image=None
-        self._last_save_camera=None
         self._acquired_videos=None
         self._trigger_display_time=0.5
         self.trig_modes=["timer","image"]
@@ -27,6 +26,8 @@ class TriggerSavePlugin(base.IPlugin):
             srcs=self.extctls["resource_manager"].name,tags=["resource/added","resource/removed"])
         self._update_frame_sources(reset_value=True)
         self.ctl.add_job("check_timer_trigger",self.check_timer_trigger,0.1)
+        self.ctl.add_command("toggle",self.toggle)
+        self.ctl.v["enabled"]=False
     
     def setup_gui(self):
         self.table=self.gui.add_plugin_box("params","Save trigger",cache_values=True)
@@ -46,6 +47,7 @@ class TriggerSavePlugin(base.IPlugin):
         @controller.exsafe
         def reset_acquired_videos():
             self.table.i["max_videos"]=self._acquired_videos=0
+            self._last_video=False
         self.table.vs["enabled"].connect(reset_acquired_videos)
         reset_acquired_videos()
         @controller.exsafe
@@ -85,18 +87,24 @@ class TriggerSavePlugin(base.IPlugin):
         self._acquired_videos+=1
         self.table.i["max_videos"]=self._acquired_videos
         if self._acquired_videos>=self.table.v["max_videos"] and self.table.v["limit_videos"]:
-            self.table.v["enabled"]=False
+            self._last_video=True
+    def _saving_in_progress(self):
+        saving_status=self.extctls["resource_manager"].cs.get_resource("process_activity","saving/streaming").get("status","off")
+        return saving_status!="off"
     def check_timer_trigger(self):
         """Check saving timer and start saving if it's passed"""
         enabled=self.table.v["enabled"]
+        self.ctl.v["enabled"]=enabled
         if enabled and self.table.v["trigger_mode"]=="timer":
             t=time.time()
-            if self._last_save_timer is None or t>self._last_save_timer+self.table.v["period"]:
+            if not (self._saving_in_progress() or self._last_video) and (self._last_save_timer is None or t>self._last_save_timer+self.table.v["period"]):
                 self._start_save(self.table.v["save_mode"])
                 self._last_save_timer=t
         else:
             self._last_save_timer=None
         self.extctls["resource_manager"].csi.update_resource("process_activity","saving/"+self.full_name,status="on" if enabled else "off")
+        if self._last_video and not self._saving_in_progress():
+            self.toggle(enable=False)
     def _update_trigger_status(self, status):
         if self.table.v["event_trigger_status"]!=status: # check (cached) value first to avoid unnecessary calls to GUI thread
             self.table.v["event_trigger_status"]=status
@@ -108,7 +116,7 @@ class TriggerSavePlugin(base.IPlugin):
             if self.table.v["frame_source"]==src:
                 if self._last_save_image is None or t>self._last_save_image+dead_time:
                     if np.any(frame>self.table.v["image_trigger_threshold"]):
-                        if self.table.v["enabled"]:
+                        if not (self._saving_in_progress() or self._last_video) and self.table.v["enabled"]:
                             self._start_save(self.table.v["save_mode"])
                         self._last_save_image=t
                 if self._last_save_image is not None and t<self._last_save_image+self._trigger_display_time:
@@ -119,6 +127,11 @@ class TriggerSavePlugin(base.IPlugin):
                     self._update_trigger_status("armed")
         else:
             self._last_save_image=None
+    
+    @controller.call_in_gui_thread
+    def toggle(self, enable=True):
+        """Enable or disable the measurement"""
+        self.ctl.v["enabled"]=self.table.v["enabled"]=enable
 
     def set_all_values(self, values):
         self._update_frame_sources(update_subscriptions=False)

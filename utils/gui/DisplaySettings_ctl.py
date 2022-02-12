@@ -17,7 +17,7 @@ class DisplaySettings_GUI(container.QGroupBoxContainer):
     _ignore_set_values={"slowdown_enabled"}
     def setup(self, slowdown_thread=None, period_update_tag="processing/control"):
         super().setup(caption="Display settings",no_margins=True)
-        self.setMaximumWidth(200)
+        self.setFixedWidth(200)
         self.slowdown_thread=slowdown_thread
         self.frame_slowdown=controller.sync_controller(self.slowdown_thread) if self.slowdown_thread else None
         # Setup GUI

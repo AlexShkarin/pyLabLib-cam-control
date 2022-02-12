@@ -19,7 +19,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
     def setup(self, ctl):
         super().setup(caption="Saving",no_margins=True)
         self.cam_ctl=ctl
-        self.setMaximumWidth(250)
+        self.setFixedWidth(250)
 
         self.record_in_progress=False
         self.popup_on_missing_frames=self.cam_ctl.settings.get("interface/popup_on_missing_frames",True)
@@ -251,6 +251,7 @@ class SaveStatus_GUI(param_table.StatusTable):
         if self.cam_ctl.save_thread:
             self._finishing_saving_time=general.Countdown(0.5,start=False)
             self.add_status_line("saving",label="Saving:",srcs=self.cam_ctl.save_thread,tags="status/saving_text")
+            self.update_status_line("saving")
         self.add_num_label("frames/received",formatter=("int"),label="Frames received:")
         self.add_num_label("frames/scheduled",formatter=("int"),label="Frames scheduled:")
         self.add_num_label("frames/saved",formatter=("int"),label="Frames saved:")
