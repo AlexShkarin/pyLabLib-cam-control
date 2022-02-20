@@ -1,9 +1,7 @@
 from pylablib.core.thread import controller
 from pylablib.core.gui.widgets import container, param_table
-from pylablib.gui.widgets import range_controls
 
-from . import cam_gui_parameters
-from .cam_gui_parameters import IntGUIParameter, FloatGUIParameter, BoolGUIParameter, EnumGUIParameter, ROIGUIParameter
+from .cam_gui_parameters import FloatGUIParameter, BoolGUIParameter, EnumGUIParameter, ROIGUIParameter
 
 
 class ICameraSettings_GUI(container.QWidgetContainer):
@@ -57,7 +55,7 @@ class ICameraSettings_GUI(container.QWidgetContainer):
         @controller.exsafe
         def on_auto_apply(v):
             if v:
-                self.send_parameters()
+                self.cam_ctl.send_parameters()
         self.settings_params.vs["auto_apply"].connect(on_auto_apply)
         self.settings_params.layout().setColumnStretch(1,0)
         self._setup_done=False
@@ -73,10 +71,11 @@ class ICameraSettings_GUI(container.QWidgetContainer):
         if tab=="advanced":
             return self.advanced_params
         raise ValueError("unrecognized tab: {}".format(tab))
-    def add_parameter(self, param, tab):
+    def add_parameter(self, param, tab, **kwargs):
         """Add the given parameter to the given tab (``"common"`` or ``"advanced"``)"""
-        param.add(self._get_tab(tab))
+        param.add(self._get_tab(tab),**kwargs)
         self._gui_parameters.append(param)
+        return param
     def setup_settings_tables(self):
         """Setup settings table entries"""
     # Build a dictionary of camera parameters from the controls
@@ -138,10 +137,10 @@ class GenericCameraSettings_GUI(ICameraSettings_GUI):
             parameter=BoolGUIParameter(self,"add_info","Acquire frame info")
             parameter.allow_diff_update=True
             return parameter
-    def add_builtin_parameter(self, name, tab):
+    def add_builtin_parameter(self, name, tab, **kwargs):
         parameter=self.get_basic_parameters(name)
         if parameter is not None:
-            self.add_parameter(parameter,tab)
+            return self.add_parameter(parameter,tab,**kwargs)
     def setup_settings_tables(self):
         self.add_builtin_parameter("exposure","common")
         self.add_builtin_parameter("frame_period","common")

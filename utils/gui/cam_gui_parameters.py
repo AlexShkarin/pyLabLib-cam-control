@@ -15,14 +15,17 @@ class IGUIParameter:
     def __init__(self, settings):
         self.settings=settings
         self.allow_diff_update=False
+        self._current_value=None
     
     def connect_updater(self, names):
         if not isinstance(names,(list,tuple)):
             names=[names]
         for n in names:
-            self.base.vs[n].connect(self._update_value)
+            self.base.vs[n].connect(controller.exsafe(self._update_value))
+    def _is_diff_update_allowed(self, oldv, newv):
+        return self.allow_diff_update
     def _update_value(self, v):
-        self.settings.update_parameter_value(allow_diff_update=self.allow_diff_update)
+        self.settings.update_parameter_value(allow_diff_update=self._is_diff_update_allowed(self._current_value,v))
         self._current_value=v
     def add(self, base):
         """Add the parameter to the given base widget (a parameter table)"""
@@ -47,9 +50,14 @@ class SingleGUIParameter(IGUIParameter):
         label: widget label
         default: default value
         indicator: if ``True``, the widget is simply an indicator and can not control the parameter
+        add_indicator: whether add indicator to this parameter
+        indirect: whether the parameter is "indirect", i.e., does not directly relate to a camera parameter; in this case it is still added to the parameters dictionary,
+            but is not disabled when the parameter is missing
         cam_name: name of the parameter in the camera parameter dictionary (same as ``gui_name`` by default)
+        to_camera: custom method to convert GUI value to camera value
+        from_camera: custom method to convert camera value to GUI value
     """
-    def __init__(self, settings, gui_name, label, default=None, indicator=False, cam_name=None):
+    def __init__(self, settings, gui_name, label, default=None, indicator=False, add_indicator=True, indirect=False, cam_name=None, to_camera=None, from_camera=None):
         super().__init__(settings)
         self.gui_name=gui_name
         self.label=label
@@ -57,7 +65,10 @@ class SingleGUIParameter(IGUIParameter):
         self.cam_name=cam_name or gui_name
         self.indicator=indicator
         self.disabled=False
-        self.add_indicator=True
+        self.indirect=indirect
+        self.add_indicator=add_indicator
+        self.from_camera_func=from_camera
+        self.to_camera_func=to_camera
     def disable(self, disabled=True):
         self.disabled=disabled
         self.base.set_enabled(self.gui_name,not self.disabled)
@@ -66,13 +77,13 @@ class SingleGUIParameter(IGUIParameter):
         if not self.indicator:
             self.connect_updater(self.gui_name)
     def setup(self, parameters, full_info):
-        self.base.set_enabled(self.gui_name,self.cam_name in parameters)
+        self.base.set_enabled(self.gui_name,self.cam_name in parameters or self.indirect)
     def to_camera(self, gui_value):
         """Convert widget value to camera parameter value"""
-        return gui_value
+        return self.to_camera_func(gui_value) if self.to_camera_func else gui_value
     def from_camera(self, cam_value):
         """Convert camera parameter value to widget value"""
-        return cam_value
+        return self.from_camera_func(cam_value) if self.from_camera_func else cam_value
     def collect(self, parameters):
         if not self.disabled:
             parameters[self.cam_name]=self.to_camera(self.settings.v[self.gui_name])
@@ -96,16 +107,25 @@ class IntGUIParameter(SingleGUIParameter):
         limit: value limit tuple (``None`` means no limit)
         default: default value
         indicator: if ``True``, the widget is simply an indicator and can not control the parameter
+        add_indicator: whether add indicator to this parameter
+        indirect: whether the parameter is "indirect", i.e., does not directly relate to a camera parameter; in this case it is still added to the parameters dictionary,
+            but is not disabled when the parameter is missing
         cam_name: name of the parameter in the camera parameter dictionary (same as ``gui_name`` by default)
+        to_camera: custom method to convert GUI value to camera value
+        from_camera: custom method to convert camera value to GUI value
     """
-    def __init__(self, settings, gui_name, label, limit=(None,None), default=0, indicator=False, cam_name=None):
-        super().__init__(settings,gui_name,label,default=default,indicator=indicator,cam_name=cam_name)
+    def __init__(self, settings, gui_name, label, limit=(None,None), default=0, indicator=False, add_indicator=True, indirect=False, cam_name=None, to_camera=None, from_camera=None):
+        super().__init__(settings,gui_name,label,default=default,indicator=indicator,add_indicator=add_indicator,indirect=indirect,
+            cam_name=cam_name,to_camera=to_camera,from_camera=from_camera)
         self.limit=limit
-    def add(self, base):
+    def add(self, base, row=None):
+        if row is not None:
+            base.insert_row(row)
         if self.indicator:
-            base.add_num_label(self.gui_name,value=self.default,label=self.label,formatter="int")
+            base.add_num_label(self.gui_name,value=self.default,label=self.label,formatter="int",location=row)
         else:
-            base.add_num_edit(self.gui_name,value=self.default,label=self.label,limiter=self.limit+("coerce","int"),formatter="int")
+            base.add_num_edit(self.gui_name,value=self.default,label=self.label,limiter=self.limit+("coerce","int"),formatter="int",
+                add_indicator=bool(self.add_indicator),location={"indicator":"next_line","widget":row} if self.add_indicator=="next_line" else row)
         super().add(base)
 
 class FloatGUIParameter(SingleGUIParameter):
@@ -120,25 +140,33 @@ class FloatGUIParameter(SingleGUIParameter):
         fmt: value format
         default: default value
         indicator: if ``True``, the widget is simply an indicator and can not control the parameter
+        add_indicator: whether add indicator to this parameter
+        indirect: whether the parameter is "indirect", i.e., does not directly relate to a camera parameter; in this case it is still added to the parameters dictionary,
+            but is not disabled when the parameter is missing
         factor: factor used to convert between displayed and camera parameter values (``displayed=camera*factor``)
         cam_name: name of the parameter in the camera parameter dictionary (same as ``gui_name`` by default)
+        to_camera: custom method to convert GUI value to camera value
+        from_camera: custom method to convert camera value to GUI value
     """
-    def __init__(self, settings, gui_name, label, limit=(None,None), fmt=".1f", default=0, indicator=False, factor=1, cam_name=None):
-        super().__init__(settings,gui_name,label,default=default,indicator=indicator,cam_name=cam_name)
+    def __init__(self, settings, gui_name, label, limit=(None,None), fmt=".1f", default=0, indicator=False, add_indicator=True, indirect=False, factor=1, cam_name=None, to_camera=None, from_camera=None):
+        super().__init__(settings,gui_name,label,default=default,indicator=indicator,add_indicator=add_indicator,indirect=indirect,
+            cam_name=cam_name,to_camera=to_camera,from_camera=from_camera)
         self.limit=limit
         self.factor=factor
         self.fmt=fmt
-    def add(self, base):
+    def add(self, base, row=None):
+        if row is not None:
+            base.insert_row(row)
         if self.indicator:
-            base.add_num_label(self.gui_name,value=self.default,label=self.label,formatter=self.fmt)
+            base.add_num_label(self.gui_name,value=self.default,label=self.label,formatter=self.fmt,location=row)
         else:
             base.add_num_edit(self.gui_name,value=self.default,label=self.label,limiter=self.limit+("coerce",),formatter=self.fmt,
-                add_indicator=bool(self.add_indicator),location={"indicator":"next_line"} if self.add_indicator=="next_line" else None)
+                add_indicator=bool(self.add_indicator),location={"indicator":"next_line","widget":row} if self.add_indicator=="next_line" else row)
         super().add(base)
     def to_camera(self, gui_value):
-        return gui_value/self.factor
+        return self.to_camera_func(gui_value) if self.to_camera_func else gui_value/self.factor
     def from_camera(self, cam_value):
-        return cam_value*self.factor
+        return self.from_camera_func(cam_value) if self.from_camera_func else cam_value*self.factor
 
 class EnumGUIParameter(SingleGUIParameter):
     """
@@ -151,10 +179,18 @@ class EnumGUIParameter(SingleGUIParameter):
         options: dictionary ``{value: label}`` with the possible parameter values
         default: default value (``None`` means the first option).
         indicator: if ``True``, the widget is simply an indicator and can not control the parameter
+        add_indicator: whether add indicator to this parameter
+        indirect: whether the parameter is "indirect", i.e., does not directly relate to a camera parameter; in this case it is still added to the parameters dictionary,
+            but is not disabled when the parameter is missing
         cam_name: name of the parameter in the camera parameter dictionary (same as ``gui_name`` by default)
+        to_camera: custom method to convert GUI value to camera value
+        from_camera: custom method to convert camera value to GUI value
     """
-    def __init__(self, settings, gui_name, label, options, default=None, indicator=False, cam_name=None):
-        super().__init__(settings,gui_name,label,default=default,indicator=indicator,cam_name=cam_name)
+    def __init__(self, settings, gui_name, label, options, default=None, indicator=False, add_indicator=True, indirect=False, cam_name=None, to_camera=None, from_camera=None):
+        super().__init__(settings,gui_name,label,default=default,indicator=indicator,add_indicator=add_indicator,indirect=indirect,
+            cam_name=cam_name,to_camera=to_camera,from_camera=from_camera)
+        if isinstance(options,(list,tuple)):
+            options=dict(enumerate(options))
         self.options=options
         self.ovalues=list(self.options)
         self.olabels=[self.options[v] for v in self.ovalues]
@@ -168,12 +204,14 @@ class EnumGUIParameter(SingleGUIParameter):
             if self.coerce:
                 return self.olabels[0]
             raise ValueError(value)
-    def add(self, base):
+    def add(self, base, row=None):
+        if row is not None:
+            base.insert_row(row)
         if self.indicator:
             base.add_text_label(self.gui_name,self.label,value=self._get_label(self.default))
         else:
             base.add_combo_box(self.gui_name,value=self.default,label=self.label,options=self.olabels,index_values=self.ovalues,
-                add_indicator=bool(self.add_indicator),location={"indicator":"next_line"} if self.add_indicator=="next_line" else None)
+                add_indicator=bool(self.add_indicator),location={"indicator":"next_line","widget":row} if self.add_indicator=="next_line" else row)
         super().add(base)
     def display(self, parameters):
         try:
@@ -196,16 +234,23 @@ class BoolGUIParameter(SingleGUIParameter):
         label: widget label
         default: default value.
         indicator: if ``True``, the widget is simply an indicator and can not control the parameter
+        add_indicator: whether add indicator to this parameter
+        indirect: whether the parameter is "indirect", i.e., does not directly relate to a camera parameter; in this case it is still added to the parameters dictionary,
+            but is not disabled when the parameter is missing
         cam_name: name of the parameter in the camera parameter dictionary (same as ``gui_name`` by default)
+        to_camera: custom method to convert GUI value to camera value
+        from_camera: custom method to convert camera value to GUI value
     """
     def _get_label(self, value):
         return "On" if value else "Off"
-    def add(self, base):
+    def add(self, base, row=None):
+        if row is not None:
+            base.insert_row(row)
         if self.indicator:
             base.add_text_label(self.gui_name,self.label,value=self._get_label(self.default))
         else:
             base.add_check_box(self.gui_name,self.label,value=bool(self.default),
-                add_indicator=bool(self.add_indicator),location={"indicator":"next_line"} if self.add_indicator=="next_line" else None)
+                add_indicator=bool(self.add_indicator),location={"indicator":"next_line","widget":row} if self.add_indicator=="next_line" else row)
         super().add(base)
     def from_camera(self, cam_value):
         return self._get_label(cam_value) if self.indicator else super().from_camera(cam_value)
@@ -239,7 +284,7 @@ class ROIGUIParameter(IGUIParameter):
         self.roi_ctl.params.set_enabled("y_bin",self.bin_kind not in {"same","none"})
         self.roi_ctl.set_value(((0,1E5,1),(0,1E5,1)))
         base.add_custom_widget("roi",self.roi_ctl)
-        @controller.exsafeSlot()
+        @controller.exsafe
         def _full_roi():
             xp,yp=self.roi_ctl.get_value()
             self.roi_ctl.set_value(((self.roi_ctl.xlim[0],self.roi_ctl.xlim[1],xp[2]),(self.roi_ctl.ylim[0],self.roi_ctl.ylim[1],yp[2])))
@@ -255,7 +300,7 @@ class ROIGUIParameter(IGUIParameter):
         for n in ["roi","show_gui_roi","show_det_size"]:
             base.vs[n].connect(lambda v: self.on_changed())
         for n in ["roi","set_full_roi"]:
-            base.vs[n].connect(self._update_value)
+            base.vs[n].connect(controller.exsafe(self._update_value))
         self.cam_roi=None
     @controller.exsafe
     def on_changed(self):
