@@ -152,7 +152,9 @@ class SettingsEditor(widgets.QWidgetContainer):
             self.add_integer_parameter(table,"camera/params/misc/buffer/min_size/frames","Frame buffer (frames)",
                 limits=(50,None),default=100)
             self.add_float_parameter(table,"camera/params/misc/buffer/min_size/time","Frame buffer (s)",
-                limits=(0.5,None),default=1.0)
+                limits=(0.2,None),default=1.0)
+            self.add_float_parameter(table,"camera/params/misc/loop/min_poll_period","Poll period (s)",
+                limits=(0.01,1),default=0.05,fmt=".2f")
         table.set_column_stretch([0,0,0,0,1])
         table.add_padding(kind="vertical",location=("next",1,1,1),stretch=1)
 

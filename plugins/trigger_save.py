@@ -31,11 +31,11 @@ class TriggerSavePlugin(base.IPlugin):
     
     def setup_gui(self):
         self.table=self.gui.add_plugin_box("params","Save trigger",cache_values=True)
-        self.table.add_combo_box("save_mode",options=["Full","Snap"],index_values=["full","snap"],label="Save mode")
+        self.table.add_combo_box("save_mode",options={"full":"Full","snap":"Snap"},label="Save mode")
         self.table.add_check_box("limit_videos",caption="Limit number of videos",value=False)
         self.table.add_num_edit("max_videos",1,limiter=(1,None,"coerce","int"),formatter="int",label="Number of videos",add_indicator=True)
         trig_mode_names={"timer":"Timer","image":"Image"}
-        self.table.add_combo_box("trigger_mode",options=[trig_mode_names[m] for m in self.trig_modes],index_values=self.trig_modes,label="Trigger mode")
+        self.table.add_combo_box("trigger_mode",options={m:trig_mode_names[m] for m in self.trig_modes},label="Trigger mode")
         self.table.add_num_edit("period",10,limiter=(.1,None,"coerce"),formatter=("float","auto",1),label="Timer period (s)")
         self.table.add_combo_box("frame_source",options=[],label="Trigger frame source")
         self.table.add_num_edit("image_trigger_threshold",0,formatter=("float","auto",4),label="Trigger threshold")
@@ -80,7 +80,7 @@ class TriggerSavePlugin(base.IPlugin):
     @controller.call_in_gui_thread
     def _update_frame_sources_indicator(self, sources, reset_value=False):
         index_values,options=zip(*[(n,v.get("caption",n)) for n,v in sources.items()])
-        self.table.w["frame_source"].set_options(options=options,index_values=index_values,value=index_values[0] if reset_value else None)
+        self.table.w["frame_source"].set_options(options=options,index_values=index_values,index=0 if reset_value else None)
     @controller.call_in_gui_thread
     def _start_save(self, mode):
         self.guictl.call_thread_method("toggle_saving",mode=mode,start=True,no_popup=True)

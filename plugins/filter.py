@@ -32,7 +32,7 @@ class FilterPanel(widgets.QFrameContainer):
         self.filter_defaults=dictionary.Dictionary()
         self.params=self.add_child("params",widgets.ParamTable(self))
         self.params.setup(add_indicator=False)
-        self.params.add_combo_box("filter_id",label="Filter:",options=list(filters.values()),index_values=list(filters),out_of_range="ignore")
+        self.params.add_combo_box("filter_id",label="Filter:",options=filters,out_of_range="ignore")
         self.params.add_button("load_filter","Load",location=(-1,2,1,1))
         self.params.w["load_filter"].setMinimumWidth(50)
         @controller.exsafe
@@ -112,7 +112,7 @@ class FilterPanel(widgets.QFrameContainer):
             elif pkind=="check":
                 self.filter_params_table.add_check_box(pname,value=bool(pdefault),caption=plabel)
             elif pkind=="select":
-                self.filter_params_table.add_combo_box(pname,value=pdefault,label=plabel,options=list(poptions.values()),index_values=list(poptions),out_of_range="ignore")
+                self.filter_params_table.add_combo_box(pname,value=pdefault,label=plabel,options=poptions,out_of_range="ignore")
             else:
                 raise ValueError("unrecognized parameter kind: {}".format(pkind))
         self.load_default_values(name)

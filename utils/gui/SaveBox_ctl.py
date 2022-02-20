@@ -224,9 +224,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.set_enabled("snap_displayed",self.v["snap_display_source"]!=-1)
     @controller.exsafe
     def update_display_source_options(self, reset_value=False):
-        frame_sources=self.cam_ctl.get_frame_sources()
-        index_values,options=list(zip(*frame_sources.items()))
-        self.params.w["snap_display_source"].set_options(options=options,index_values=index_values,value=index_values[0] if reset_value else None)
+        self.params.w["snap_display_source"].set_options(options=self.cam_ctl.get_frame_sources(),index=0 if reset_value else None)
     def set_all_values(self, values):
         self.update_display_source_options()
         if "saving" in values:
