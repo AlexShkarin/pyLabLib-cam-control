@@ -39,10 +39,11 @@ import subprocess
 import traceback
 import win32com.client
 
-from utils.gui import camera_control, SaveBox_ctl, GenericCamera_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
+from utils.gui import camera_control, SaveBox_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
 from utils.gui import tutorial, color_theme, settings_editor, about
-from utils import services, devthread
+from utils import services
+from utils.cameras import camera_descriptors
 import plugins
 import splash
 
@@ -79,11 +80,11 @@ resource_manager_thread="resource_manager"
 ### Main window ###
 class StandaloneFrame(container.QWidgetContainer):
     @controller.exsafe
-    def setup(self, settings, cam_name):
+    def setup(self, settings, cam_name, cam_desc):
         super().setup(layout="hbox")
         self.ctl.res_mgr=controller.sync_controller(resource_manager_thread)
         
-        self.cam_kind=camera_kinds[settings["cameras",cam_name,"kind"]]
+        self.cam_desc=cam_desc
         self.cam_name=cam_name
         self.settings=settings
         self.load_locals()
@@ -140,7 +141,7 @@ class StandaloneFrame(container.QWidgetContainer):
             self.control_tabs.setup()
             self._add_param_loading(self)
         cam_tab=self.control_tabs.add_tab("cam_tab","Camera",no_margins=False)
-        self.cam_settings_table=self.cam_kind.controller(self)
+        self.cam_settings_table=self.cam_desc.make_gui_control(self)
         cam_tab.add_group_box("cam_settings_box",caption="Camera settings",no_margins=False).add_to_layout(self.cam_settings_table)
         self.cam_settings_table.setup(self.cam_ctl)
         self.cam_ctl.add_child("settings",self.cam_settings_table,gui_values_path="cam")
@@ -211,7 +212,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.saving_settings_table.setup(self.cam_ctl)
         self.cam_ctl.add_child("savebox",self.saving_settings_table,gui_values_path="save")
     def _add_camstatus(self, parent):
-        self.cam_status_table=parent.add_to_layout(self.cam_kind.status(self))
+        self.cam_status_table=parent.add_to_layout(self.cam_desc.make_gui_status(self))
         self.cam_status_table.setup(self.cam_ctl)
         self.cam_ctl.add_child("camstat",self.cam_status_table,gui_values_path="camstat")
     def _add_savestatus(self, parent):
@@ -612,27 +613,6 @@ class ErrorBoxDisplay:
             self._show_message_box("Error","An error arose:\n\n{}\n{}".format(err_msg,post_msg))
 error_display=ErrorBoxDisplay()
 
-### Camera kinds ###
-TCameraKind=collections.namedtuple("TCameraKind",["devthread","controller","status"])
-def_controller=GenericCamera_ctl.GenericCameraSettings_GUI
-def_status=GenericCamera_ctl.GenericCameraStatus_GUI
-camera_kinds={
-    "AndorSDK2": TCameraKind(devthread.AndorSDK2CameraThread, def_controller, def_status),
-    "AndorSDK2IXON": TCameraKind(devthread.AndorSDK2IXONThread, GenericCamera_ctl.IXONCameraSettings_GUI, GenericCamera_ctl.IXONCameraStatus_GUI),
-    "AndorSDK2Luca": TCameraKind(devthread.AndorSDK2LucaThread, GenericCamera_ctl.LucaCameraSettings_GUI, GenericCamera_ctl.LucaCameraStatus_GUI),
-    "AndorSDK3": TCameraKind(devthread.AndorSDK3CameraThread, def_controller, def_status),
-    "AndorSDK3Zyla": TCameraKind(devthread.AndorSDK3ZylaThread, GenericCamera_ctl.ZylaCameraSettings_GUI, GenericCamera_ctl.ZylaCameraStatus_GUI),
-    "DCAM": TCameraKind(devthread.DCAMCameraThread, GenericCamera_ctl.DCAMCameraSettings_GUI, def_status),
-    "DCAMOrca": TCameraKind(devthread.DCAMOrcaCameraThread, GenericCamera_ctl.DCAMCameraSettings_GUI, def_status),
-    "DCAMImagEM": TCameraKind(devthread.DCAMImagEMCameraThread, GenericCamera_ctl.DCAMImagEMCameraSettings_GUI, def_status),
-    "PhotonFocusLAN": TCameraKind(devthread.EthernetPhotonFocusIMAQdxCameraThread, def_controller, def_status),
-    "PhotonFocusIMAQ": TCameraKind(devthread.IMAQPhotonFocusCameraThread, GenericCamera_ctl.PhotonFocusIMAQCameraSettings_GUI, GenericCamera_ctl.PhotonFocusIMAQCameraStatus_GUI),
-    "PhotonFocusSiSo": TCameraKind(devthread.SiliconSoftwarePhotonFocusCameraThread, GenericCamera_ctl.PhotonFocusSiliconSoftwareCameraSettings_GUI, GenericCamera_ctl.PhotonFocusSiliconSoftwareCameraStatus_GUI),
-    "PCOSC2": TCameraKind(devthread.PCOCameraThread, GenericCamera_ctl.PCOCameraSettings_GUI, def_status),
-    "Picam": TCameraKind(devthread.PicamCameraThread, GenericCamera_ctl.PicamCameraSettings_GUI, def_status),
-    "UC480": TCameraKind(devthread.UC480CameraThread, GenericCamera_ctl.UC480CameraSettings_GUI, GenericCamera_ctl.UC480CameraStatus_GUI),
-    "ThorlabsTLCam": TCameraKind(devthread.ThorlabsTLCameraThread, GenericCamera_ctl.ThorlabsTLCameraSettings_GUI, def_status),
-}
 
 
 ### Command line arguments ###
@@ -710,10 +690,12 @@ def start_app(ask_on_no_cam=True):
         if ("css",cam_name) in settings:
             settings.update(settings["css",cam_name])
         app.setStyleSheet(color_theme.load_style(settings.get("interface/color_theme","dark")))
-        cam_kind=camera_kinds[settings["cameras",cam_name,"kind"]]
-        cam_ctl=cam_kind.devthread(cam_thread,kwargs=settings["cameras",cam_name,"params"].as_dict())
+
+        cam_desc_class=camera_descriptors[settings["cameras",cam_name,"kind"]]
+        cam_desc=cam_desc_class(cam_name,settings=settings["cameras",cam_name])
+        cam_ctl=cam_desc.make_thread(cam_thread)
         cam_ctl.start()
-        main_form.setup(settings=settings,cam_name=cam_name)
+        main_form.setup(settings=settings,cam_name=cam_name,cam_desc=cam_desc)
         settings_ctl=controller.sync_controller(settings_manager_thread)
         settings_ctl.ca.update_settings("software/version",version)
         settings_ctl.ca.add_source("cam",cam_ctl.cs.get_full_info)

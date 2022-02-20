@@ -16,7 +16,7 @@ class Settings_GUI(GenericCameraSettings_GUI):
 
 
 class PicamCameraDescriptor(ICameraDescriptor):
-    _cam_kind="Picams"
+    _cam_kind="Picam"
 
     @classmethod
     def iterate_cameras(cls, verbose=False):
