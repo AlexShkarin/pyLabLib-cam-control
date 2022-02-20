@@ -30,6 +30,10 @@ import pylablib
 from pylablib.core.gui import QtWidgets, QtCore, QtGui, Signal, qtkwargs
 import pyqtgraph
 pyqtgraph.setConfigOptions(useOpenGL=True,antialias=False)
+try:
+    pyqtgraph.setConfigOptions(useNumba=True)
+except KeyError:
+    pass
 
 import argparse
 import datetime
@@ -75,6 +79,7 @@ save_thread="frame_save"
 snap_save_thread="frame_save_snap"
 settings_manager_thread="settings_manager"
 resource_manager_thread="resource_manager"
+garbage_collector_thread="garbage_collector"
 
 
 ### Main window ###
@@ -137,7 +142,7 @@ class StandaloneFrame(container.QWidgetContainer):
         # Setup control tab widget
         with self.using_new_sublayout("control_tabs_box","vbox"):
             self.control_tabs=self.add_child("control_tabs",container.QTabContainer(self))
-            self.control_tabs.setMinimumWidth(300 if self.compact_interface else 270)
+            self.control_tabs.setFixedWidth(300)
             self.control_tabs.setup()
             self._add_param_loading(self)
         cam_tab=self.control_tabs.add_tab("cam_tab","Camera",no_margins=False)
@@ -168,7 +173,6 @@ class StandaloneFrame(container.QWidgetContainer):
         self.plotting_settings.setup(channel_accumulator_thread,self.trace_plotter,settings=settings)
         self.plotting_settings.set_all_values({"update_plot":True,"disp_last":1000,"roi/center/x":16,"roi/center/y":16,"roi/size/x":32,"roi/size/y":32})
         proc_tab.add_padding()
-        self.control_tabs.setMaximumWidth(300)
         self.set_column_stretch(0,1)
         self.cam_ctl.set_all_values({"img/normalize":True})
         self.activity_indicator=self.add_child("activity_indicator",ActivityIndicator_ctl.ActivityIndicator_GUI(self))
@@ -646,12 +650,14 @@ def start_threads(settings):
     services.FrameSaveThread(snap_save_thread,kwargs={"src":"any","tag":"frames/new/snap","settings_mgr":settings_manager_thread}).start()
     services.SettingsManager(settings_manager_thread).start()
     services.ResourceManager(resource_manager_thread).start()
+    services.GarbageCollector(garbage_collector_thread).start()
     channel_accum=controller.sync_controller(channel_accumulator_thread)
     channel_accum.cs.add_source("raw",src=preprocess_thread,tag="frames/new",sync=True,kind="raw")
     channel_accum.cs.add_source("show",src=process_thread,tag="frames/new/show",sync=True,kind="show")
     image_saver=controller.sync_controller(save_thread)
     image_saver.ca.setup_queue_ram(settings.get("saving/max_queue_ram",4*2**30))
 
+_displayed_forms=[]  # against garbage collection
 @controller.exsafe
 def start_app(ask_on_no_cam=True):
     """Start the application: determine the camera, create and set up frame"""
@@ -663,6 +669,7 @@ def start_app(ask_on_no_cam=True):
         missing_settings_form.setup(argvp.config_file)
         missing_settings_form.show()
         splash.update_splash_screen(False)
+        _displayed_forms.append(missing_settings_form)
         return
     cams=settings.get("cameras",{})
     if len(cams)==0: # Show a message and exit
@@ -709,6 +716,7 @@ def start_app(ask_on_no_cam=True):
         main_form.start()
         main_form.show()
         splash.update_splash_screen(False)
+        _displayed_forms.append(main_form)
     if "select_camera" in settings:
         start_main_form()
     else:
@@ -717,6 +725,7 @@ def start_app(ask_on_no_cam=True):
         select_form.camera_selected.connect(start_main_form)
         select_form.show()
         splash.update_splash_screen(False)
+        _displayed_forms.append(select_form)
 
 
 ### Main execution ###
@@ -726,10 +735,12 @@ def prepare_app():
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_Use96Dpi,True)
     return QtWidgets.QApplication([])
 def execute(app=None):
-    if app is None:
+    console=app is None
+    if console:
         app=prepare_app()
     gui=controller.get_gui_controller()
-    controller.add_exception_hook("error_message",error_display.show_message,single_call=True)
+    if not console:
+        controller.add_exception_hook("error_message",error_display.show_message,single_call=True)
     gui.started.connect(start_app)
     app.exec_()
 if __name__=="__main__":

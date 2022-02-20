@@ -1,6 +1,8 @@
 from pylablib.core.thread import controller
 from pylablib.core.utils import dictionary
+
 import threading
+import gc
 
 
 class SettingsManager(controller.QTaskThread):
@@ -43,6 +45,12 @@ class SettingsManager(controller.QTaskThread):
                 sett=self.settings[s]
                 settings.update({alias.get(s,s):sett})
         return settings
+
+
+
+class GarbageCollector(controller.QTaskThread):
+    def setup_task(self):
+        self.add_job("garbage_collect",gc.collect,2)
 
 
 

@@ -667,11 +667,12 @@ class FrameSaveThread(controller.QTaskThread):
             self._tiff_writer.append_data(frames)
     def _write_frames(self, frames, append=True):
         """Write frames to the given path"""
+        if not frames:
+            return
         if self.format in ["cam"]:
             frames=[f for fs in frames for f in fs]
         nsaved=self.v["saved"]
-        if frames:
-            self._last_frame=frames[-1][-1,:].copy()
+        self._last_frame=frames[-1][-1,:].copy()
         if self.format=="cam":
             if self.filesplit is None:
                 cam.save_cam(frames,self._make_path(),append=append)
@@ -685,7 +686,13 @@ class FrameSaveThread(controller.QTaskThread):
                         self._file_idx+=1
                         self._clean_path(idx=self._file_idx)
         elif self.format=="raw":
-            save_dtype="<f8" if frames[0].dtype.kind=="f" else "<u2"
+            if frames[0].dtype.kind=="f":
+                save_dtype="<f8"
+            elif frames[0].dtype.kind in "ui":
+                save_dtype=frames[0].dtype.newbyteorder("<")
+            else:
+                save_dtype=frames[0].dtype
+            self._last_frame=frames[-1][-1,:].astype(save_dtype).copy()
             mode="ab" if append else "wb"
             if self.filesplit is None:
                 with open(self._make_path(),mode) as f:

@@ -49,6 +49,7 @@ class GenericCameraCtl(container.QContainer):
             self.setup_activity_indicators()
         self.ctl.add_thread_method("toggle_saving",self.toggle_saving)
         self.ctl.add_thread_method("get_saving_parameters",lambda mode="full": self.c["savebox"].collect_parameters(mode))
+        self.ctl.add_thread_method("saving_in_progress",self.saving_in_progress)
         self.ctl.add_thread_method("dev_connect",self.dev_connect)
         self.ctl.add_thread_method("dev_disconnect",self.dev_disconnect)
         self.ctl.add_thread_method("acq_start",self.acq_start)
@@ -57,7 +58,7 @@ class GenericCameraCtl(container.QContainer):
         self.connected=False
         self._last_parameters={}
         self._last_shown_frame=None
-        self.add_timer_event("update_parameters",self.update_parameters,period=0.5)
+        self.add_timer_event("update_parameters",self.update_parameters,period=0.2)
 
     def setup_activity_indicators(self):
         """Setup activities indicators and their update methods"""
@@ -80,12 +81,9 @@ class GenericCameraCtl(container.QContainer):
                 srcs=self.save_thread,tags="status/saving")
     def start(self):
         """Start update timer"""
-        self.dev=controller.sync_controller(self.cam_thread,"start")
-        if "camstat" in self.c and self.cam_name is not None:
-            cam_name=self.settings.get(("cameras",self.cam_name,"display_name"),self.cam_name)
-            cam_kind=self.settings.get(("cameras",self.cam_name,"kind"),"")
-            self.c["camstat"].set_camera_description(cam_name,cam_kind)
+        self.dev=controller.sync_controller(self.cam_thread)
         self.setup_pretrigger()
+        self.setup_gui_parameters()
         super().start()
         self.recv_status_update(self.dev.v["status/connection"])
     
@@ -143,6 +141,13 @@ class GenericCameraCtl(container.QContainer):
                 else:
                     self.snap_saver.ca.save_stop()
             self.update_parameters(update={"status/saving":"in_progress"} if (start and mode=="full") else None)
+    def saving_in_progress(self):
+        """Check if saving is in progress"""
+        if self.saver is not None:
+            status=self.saver.v["status/saving"]
+            if status in {"in_progress","stopping"}:
+                return status
+        return False
     frames_sources_updates=Signal()
     def get_frame_sources(self):
         """Get a dictionary ``{name: caption}`` of all frame sources for the snap saving"""
@@ -184,7 +189,6 @@ class GenericCameraCtl(container.QContainer):
         """Get parameters from the camera and saver threads and put them in form used by widgets"""
         if self.dev is None:
             return {}
-        self.dev.sync_exec_point("run",timeout=20.)
         params=self.dev.get_variable("parameters") or {}
         for s in ["status/connection","status/acquisition","frames/read","frames/acquired","frames/buffer_filled","frames/fps"]:
             params[s]=self.dev.v[s]
@@ -205,6 +209,14 @@ class GenericCameraCtl(container.QContainer):
         if just_connected:
             self.send_parameters()
         self.update_parameters()
+    def setup_gui_parameters(self):
+        """Setup camera settings controller for the specific camera"""
+        if self.dev is None:
+            return
+        parameters=self.get_thread_parameters()
+        full_info=self.dev.cs.get_full_info(add_aux=True)
+        if "settings" in self.c:
+            self.c["settings"].setup_gui_parameters(parameters,full_info)
     # Check camera parameters and setup the interface (called on timer)
     def update_parameters(self, update=None):
         """Update camera and saving parameters, and show them in widgets"""
@@ -224,7 +236,7 @@ class GenericCameraCtl(container.QContainer):
         """
         Collect parameters from widgets and send it to the camera
         
-        If ``only_diff==True``, only save parameters which are different from the last send.
+        If ``only_diff==True``, only send parameters which are different from the last send.
         If dependencies` is not ``None``, it specifies dictionary ``{name: [deps]}`` with parameter dependencies;
         when parameter ``name`` is updated, all dependent parameters (in list ``[deps]``) should be updated as well (only applies if ``only_diff==True``).
         """
