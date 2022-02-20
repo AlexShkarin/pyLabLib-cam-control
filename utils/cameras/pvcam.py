@@ -56,9 +56,7 @@ class ClearModeParameter(cam_gui_parameters.EnumGUIParameter):
     def setup(self, parameters, full_info):
         super().setup(parameters,full_info)
         if "parameter_ranges/clear_mode" in full_info:
-            clear_modes=full_info["parameter_ranges/clear_mode"]
-            index_values=list(clear_modes)
-            self.base.w[self.gui_name].set_options([clear_modes[v] for v in index_values],index_values=index_values,value=index_values[0])
+            self.base.w[self.gui_name].set_options(full_info["parameter_ranges/clear_mode"],index=0)
         else:
             self.disable()
 
@@ -117,32 +115,33 @@ class PvcamCameraDescriptor(ICameraDescriptor):
     _cam_kind="pvcam"
 
     @classmethod
-    def detect(cls, verbose=False):
+    def iterate_cameras(cls, verbose=False):
         if verbose: print("Searching for Pvcam cameras")
-        cameras=dictionary.Dictionary()
         try:
             cams=Photometrics.list_cameras()
         except (Photometrics.PvcamError, OSError):
             if verbose: print("Error loading or running the Pvcam library: required software (Photometrics PVCAM) must be missing\n")
-            return cameras
+            return
         cam_num=len(cams)
         if not cam_num:
             if verbose: print("Found no Pvcam cameras\n")
-            return cameras
+            return
         if verbose: print("Found {} Pvcam camera{}".format(cam_num,"s" if cam_num>1 else ""))
-        for i,name in enumerate(cams):
+        for name in cams:
             try:
                 with Photometrics.PvcamCamera(name) as cam:
                     device_info=cam.get_device_info()
-                if verbose: print("Found Pvcam camera name={}, product {}, serial {}".format(name,device_info.product, device_info.serial))
-                cam_desc=cls.build_cam_desc(params={"cam_name":name})
-                cam_desc["display_name"]=" ".join(s for s in [device_info.vendor,device_info.system,device_info.serial] if s)
-                cam_name="pvcam_{}".format(i)
-                cameras[cam_name]=cam_desc
-                if verbose: cls.print_added_camera(cam_name,cam_desc)
+                    if verbose: print("Found Pvcam camera name={}, product {}, serial {}".format(name,device_info.product,device_info.serial))
+                    yield cam,name
             except Photometrics.PvcamError:
                 if verbose: print("Could not open Pvcam camera name={}".format(name))
-        return cameras
+    @classmethod
+    def generate_description(cls, idx, cam=None, info=None):
+        device_info=cam.get_device_info()
+        cam_desc=cls.build_cam_desc(params={"cam_name":info})
+        cam_desc["display_name"]=" ".join(s for s in [device_info.vendor,device_info.system,device_info.serial] if s)
+        cam_name="pvcam_{}".format(idx)
+        return cam_name,cam_desc
     
     def get_kind_name(self):
         return "Photometrics PVCAM"

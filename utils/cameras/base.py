@@ -8,13 +8,11 @@ class ICameraDescriptor:
     Includes method to detect cameras of the given type, start threads, and create GUI (settings control and status display).
     """
     _cam_kind=None
+    _expands=None
     def __init__(self, name, settings=None):
         self.name=name
         self.settings=settings or {}
     
-    @classmethod
-    def build_cam_desc(cls, params):
-        return dictionary.Dictionary({"kind":cls._cam_kind,"params":params or {}})
     @classmethod
     def print_added_camera(cls, name, desc):
         """Print information about a newly detected camera"""
@@ -26,9 +24,49 @@ class ICameraDescriptor:
             print("\tdisplay_name = '{}'".format(desc["display_name"]))
         print("")
     @classmethod
-    def detect(cls, verbose=False):
-        """Detect all cameras of the given type"""
+    def iterate_cameras(cls, verbose=False):
+        """Iterate over all cameras of the given type"""
         raise NotImplementedError
+    @classmethod
+    def generate_description(cls, idx, cam=None, info=None):
+        """
+        Return camera description dictionary for the given camera index, camera class, and additional info.
+        
+        Return either tuple ``(cam_name, cam_desc)`` or ``None`` (camera can not be added).
+        """
+
+    @classmethod
+    def build_cam_desc(cls, params, cam_kind=None):
+        return dictionary.Dictionary({"kind":cam_kind or cls._cam_kind,"params":params or {}})
+    @classmethod
+    def can_expand(cls, cam_kind):
+        return cls._expands==cam_kind
+    @classmethod
+    def find_description(cls, idx, cam=None, info=None, camera_descriptors=None):
+        """
+        Find the most specific description for the given camera index, camera class, and additional info.
+
+        Return tuple ``(cls, desc)``, where ``desc`` is the result of :meth:`generate_description` call
+        and ``cls`` is the class which generated this description.
+        """
+        desc=cls.generate_description(idx,cam=cam,info=info)
+        if desc and camera_descriptors:
+            for d in camera_descriptors:
+                if d.can_expand(cls._cam_kind):
+                    exp_cls,exp_desc=d.find_description(idx,cam=cam,info=info,camera_descriptors=camera_descriptors)
+                    if exp_desc is not None:
+                        return exp_cls,exp_desc
+        return cls,desc
+    @classmethod
+    def detect(cls, verbose=False, camera_descriptors=None):
+        """Detect all cameras of the given type"""
+        cameras=dictionary.Dictionary()
+        for i,(cam,info) in enumerate(cls.iterate_cameras(verbose=verbose)):
+            desc_cls,desc=cls.find_description(i,cam=cam,info=info,camera_descriptors=camera_descriptors)
+            if desc is not None and desc[0] is not None:
+                if verbose: desc_cls.print_added_camera(*desc)
+                cameras[desc[0]]=desc[1]
+        return cameras
     def get_kind_name(self):
         """Get user-friendly name to be displayed in the GUI"""
         raise NotImplementedError

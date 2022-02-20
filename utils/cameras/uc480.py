@@ -51,39 +51,36 @@ class UC480CameraDescriptor(ICameraDescriptor):
     _backend_software={"uc480":"ThorCam","ueye":"IDS uEye"}
 
     @classmethod
-    def _detect_backend(cls, backend, verbose=False):
+    def _iterate_backend(cls, backend, verbose=False):
         if verbose: print("Searching for {} cameras".format(cls._backend_names[backend]))
-        cameras=dictionary.Dictionary()
         try:
             cam_infos=uc480.list_cameras(backend=backend)
         except (uc480.uc480Error, OSError):
             if verbose: print("Error loading or running {} library: required software ({}) must be missing\n".format(
                     backend,cls._backend_software[backend]))
-            return cameras
+            return
         cam_num=len(cam_infos)
         if not cam_num:
             if verbose: print("Found no {} cameras\n".format(backend))
-            return cameras
+            return
         if verbose: print("Found {} {} camera{}".format(cam_num,backend,"s" if cam_num>1 else ""))
-        for c in cam_infos:
-            idx=c.cam_id
-            dev_idx=c.dev_id
-            sn=c.serial_number
-            if verbose: print("Found {} camera dev_idx={}, cam_idx={}".format(backend,dev_idx,idx))
-            if verbose: print("\tModel {}, serial {}".format(c.model,sn))
-            cam_desc=cls.build_cam_desc(params={"idx":idx,"dev_idx":dev_idx,"sn":sn,"backend":backend})
-            cam_desc["display_name"]="{} {}".format(c.model,c.serial_number)
-            cam_name="{}_{}".format(backend,idx)
-            cameras[cam_name]=cam_desc
-            if verbose: cls.print_added_camera(cam_name,cam_desc)
-        return cameras
+        for ci in cam_infos:
+            if verbose: print("Found {} camera dev_idx={}, cam_idx={}".format(backend,ci.dev_id,ci.cam_id))
+            if verbose: print("\tModel {}, serial {}".format(ci.model,ci.serial_number))
+            yield None,(backend,ci)
     @classmethod
-    def detect(cls, verbose=False):
-        cameras=dictionary.Dictionary()
-        cameras.update(cls._detect_backend("uc480",verbose=verbose))
-        cameras.update(cls._detect_backend("ueye",verbose=verbose))
-        return cameras
-    
+    def iterate_cameras(cls, verbose=False):
+        for backend in ["uc480","ueye"]:
+            for desc in cls._iterate_backend(backend,verbose=verbose):
+                yield desc
+    @classmethod
+    def generate_description(cls, idx, cam=None, info=None):
+        backend,ci=info
+        cam_desc=cls.build_cam_desc(params={"idx":ci.cam_id,"dev_idx":ci.dev_id,"sn":ci.serial_number,"backend":backend})
+        cam_desc["display_name"]="{} {}".format(ci.model,ci.serial_number)
+        cam_name="{}_{}".format(backend,idx)
+        return cam_name,cam_desc
+
     def get_kind_name(self):
         return self._backend_names[self.settings.get("params/backend","uc480")]
     
