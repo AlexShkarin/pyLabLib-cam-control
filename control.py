@@ -497,7 +497,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self._notify_plugins()
         if not self.locals.get("tutorial_shown",False):
             self.show_tutorial_box()
-    @controller.exsafeSlot()
+    @controller.toploopSlot()
     def stop(self):
         if self._running:
             self.save_settings()

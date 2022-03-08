@@ -31,7 +31,8 @@ Cam-control is built using `pylablib <https://github.com/AlexShkarin/pyLabLib/>`
 - IMAQ frame grabbers: freely available `Vision Acquisition Software <https://www.ni.com/en-us/support/downloads/drivers/download.vision-acquisition-software.html>`__. In addition, you would also need to specify the correct camera file, which describes the camera communication protocol details.
 - Silicon Software frame grabbers: freely available (upon registration) `Silicon Software Runtime Environment <https://www.baslerweb.com/en/sales-support/downloads/software-downloads/#type=framegrabbersoftware;language=all;version=all;os=windows64bit>`__ (the newest version for 64-bit Windows is `5.7.0 <https://www.baslerweb.com/en/sales-support/downloads/software-downloads/complete-installation-for-windows-64bit-ver-5-7-0/>`__).
 - PhotonFocus: on top of IMAQ or Silicon Software requirements, it needs freely available (upon registration) `PFInstaller <https://www.photonfocus.com/support/software/>`__ software.
-- PICam cameras: freely available `PICam <https://www.princetoninstruments.com/products/software-family/pi-cam>`__ software.
+- PICam (Princeton Instruments) cameras: freely available `PICam <https://www.princetoninstruments.com/products/software-family/pi-cam>`__ software.
+- PVCAM (Photometrics) cameras: freely available (upon registration) `PVCAM software <https://www.photometrics.com/support/download/pvcam>`__.
 
 .. note::
 

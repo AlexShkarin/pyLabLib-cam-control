@@ -239,6 +239,9 @@ class IPlugin:
         self.name=name
         self.full_name="{}.{}".format(self.get_class_name(),self.name)
         self.ctl=ctl
+        self.ca=self.ctl.ca
+        self.cs=self.ctl.cs
+        self.csi=self.ctl.csi
         self.guictl=controller.get_gui_controller()
         self.extctls=ext_controllers or {}
         self.parameters=parameters or {}
@@ -292,6 +295,9 @@ class IPlugin:
         self._running=False
         self.cleanup()
         controller.call_in_gui_thread(self.gui.clear)()
+    def is_running(self):
+        """Check if the plugin is still running"""
+        return self._running
 
     @controller.exsafe
     def exit(self):

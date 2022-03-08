@@ -135,7 +135,7 @@ class FilterPanel(widgets.QFrameContainer):
     def update_indicators(self):
         """Update filter indicators and status values"""
         values=self.plugin.csi.get_all_parameters()
-        if values is None:
+        if values is None or not self.is_running():
             return
         self.filter_params_table.set_all_indicators(values)
         self.filter_status_table.set_all_values(values)
@@ -332,9 +332,6 @@ class FilterPlugin(base.IPlugin):
         self.caption=self.parameters.get("caption","Filter")
         self.filter=None
         self.filter_enabled=False
-        self.ca=self.ctl.ca
-        self.cs=self.ctl.cs
-        self.csi=self.ctl.csi
         self.filter_thread=FilterThread(self.ctl.name+".filter_thread",kwargs={"src":self.extctls["slowdown"].name,"settings":self.parameters})
         self.filter_thread.start()
         self.filter_thread.sync_exec_point("run")

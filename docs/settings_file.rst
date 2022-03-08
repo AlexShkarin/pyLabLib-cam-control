@@ -157,6 +157,7 @@ Specific system parameters
         - ``pco_sc2``: path to ``SC2_Cam.dll`` for PCO cameras. By default, search in the default location of pco.camware or pco.sdk.
         - ``picam``; path to ``picam.dll`` for Princeton Instruments cameras. By default, search in the default location of Princeton Instruments PICam Runtime.
         - ``pfcam``: path to ``pfcam.dll`` for PhotonFocus cameras. By default, search in PFRemote folder specified in the ``PATH`` environment variable.
+        - ``pvcam``; path to ``pvcam64.dll`` for Photometrics cameras. By default, search in ``System32`` folder, where it is placed after installing PVCAM software.
         - ``sisofgrab``: path to ``fglib5.dll`` for Silicon Software frame grabber interface. By default, search in Silicon Software Runtime Environment folder specified in the ``PATH`` environment variable.
         - ``thorlabs_tlcam``: path to ``thorlabs_tsi_camera_sdk.dll`` and related DLLs for Thorlabs Scientific Cameras. By default, search in the default location of ThorCam.
         - ``uc480``: path to ``uc480_64.dll`` and related DLLs for uc480 camera interface. By default, search in the default location of ThorCam.
