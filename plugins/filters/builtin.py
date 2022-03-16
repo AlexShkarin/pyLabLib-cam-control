@@ -44,6 +44,7 @@ class FFTBandpassFilter(base.ISingleFrameFilter):
         self.add_parameter("maxwidth",label="Maximal width",limit=(0,None),default=10)
         self.add_parameter("filter_kind",label="Filter kind",kind="select",options={"smooth":"Smooth (DoG)","hard":"Hard"})
         self.add_parameter("show_info",label="Showing",kind="select",options={"frame":"Filtered frame","psd":"Raw PSD","filt_psd":"Filtered PSD","filt":"Filter"})
+        self.add_plotter_selector(default="frame")
         self.mask=None
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
@@ -79,8 +80,10 @@ class FFTBandpassFilter(base.ISingleFrameFilter):
         if self.mask is None or self.mask.shape!=frame.shape:
             self._update_mask(frame.shape)
         if self.p["show_info"]=="frame":
+            self.select_plotter("frame")
             return self._apply_mask(frame)
         else:
+            self.select_plotter("psd" if self.p["show_info"] in ["psd","filt_psd"] else "filt")
             return self._get_aux_info(frame)
 
 
@@ -140,7 +143,7 @@ class MovingAccumulatorFilter(base.IMultiFrameFilter):
         super().setup(process_incomplete=True)
         self.add_parameter("length",label="Number of frames",kind="int",limit=(1,None),default=20)
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
-        self.add_parameter("kind",label="Combination method",kind="select",options={"mean":"Mean","median":"Median","min":"Min","max":"Max","std":"Standard deviation"})
+        self.add_parameter("kind",label="Combination method",kind="select",options={"mean":"Mean","median":"Median","min":"Min","max":"Max","std":"Std dev"})
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
         buffer_size=value if name=="length" else None
@@ -216,6 +219,7 @@ class TimeMapFilter(base.IMultiFrameFilter):
         self.add_parameter("position",label="Position",kind="int",limit=(0,None))
         self.add_parameter("width",label="Width",kind="int",limit=(1,None),default=10)
         self.add_parameter("show_map_info",label="Showing",kind="select",options={"map":"Time map","frame":"Frame"})
+        self.add_plotter_selector(default="map")
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
         buffer_size=value if name=="length" else None
@@ -243,7 +247,9 @@ class TimeMapFilter(base.IMultiFrameFilter):
             out_frame=np.full(frame.shape,np.nan)
             cutout=frame[rs[0]:rs[1],cs[0]:cs[1]]
             out_frame[rs[0]:rs[1],cs[0]:cs[1]]=cutout
+            self.select_plotter("frame")
             return out_frame
+        self.select_plotter("map")
         axis,rs,cs=self._get_region(buffer[0].shape)
         img=np.full((self.p["length"],buffer[0].shape[1-axis]),np.nan)
         img[:len(buffer)]=np.mean(np.array(buffer)[:,rs[0]:rs[1],cs[0]:cs[1]],axis=axis+1)

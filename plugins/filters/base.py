@@ -72,7 +72,7 @@ class IFrameFilter:
         """
         if name in self.p:
             raise ValueError("parameter {} is already defined".format(name))
-        allowed_kinds=["text","float","int"] if indicator else ["text","float","int","button","check","select"]
+        allowed_kinds=["text","float","int","virtual"] if indicator else ["text","float","int","button","check","select","virtual"]
         if kind not in allowed_kinds:
             raise ValueError("unrecognized parameter kind: {}; allowed parameters are {}".format(kind,allowed_kinds))
         if label is None:
@@ -86,6 +86,12 @@ class IFrameFilter:
                 default=list(options)[0]
         self.description["gui/parameters"].append({"name":name,"label":label,"kind":kind,"limit":limit,"fmt":fmt,"options":options or {},"default":default,"indicator":indicator})
         self.p[name]=default
+    def add_plotter_selector(self, default="__default__"):
+        """Add the possibility to select different plotter settings depending on the image"""
+        self.add_parameter("__plotter_selector__",kind="virtual",default=default,indicator=True)
+    def select_plotter(self, selector):
+        """Select a specific plotter settings set"""
+        self.set_parameter("__plotter_selector__",selector)
 
     ## Setup functions ##
     def setup(self):
