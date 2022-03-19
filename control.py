@@ -45,7 +45,7 @@ import win32com.client
 
 from utils.gui import camera_control, SaveBox_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
-from utils.gui import tutorial, color_theme, settings_editor, about
+from utils.gui import tutorial, color_theme, settings_editor, about, error_message
 from utils import services
 from utils.cameras import camera_descriptors
 import plugins
@@ -597,24 +597,22 @@ class MissingSettingsFrame(param_table.ParamTable):
 
 class ErrorBoxDisplay:
     """Error box display, which handles error message popup upon exceptions"""
-    @controller.call_in_gui_thread
-    def _show_message_box(self, caption, message):
-        parent=splash.get_splash_screen()
-        if parent is None or not parent.isVisible():
-            parent=None
-            for w in threadprop.get_app().topLevelWidgets():
-                if w.isVisible():
-                    parent=w
-                    break
-        with controller.get_gui_controller().blocking_control_signals():
-            QtWidgets.QMessageBox.critical(parent,caption,message,QtWidgets.QMessageBox.Ok)
-    def show_message(self):
+    def __init__(self):
+        self.error_msg=None
+    def check_for_error(self):
+        if self.error_msg is None:
+            return
+        threadprop.get_app().closeAllWindows()
+        app=QtWidgets.QApplication([])
+        frame=error_message.ErrorBox()
+        frame.setup(self.error_msg)
+        frame.show()
+        app.exec_()
+    def on_error(self):
         """Show error message dialog box"""
         etype,exc,_=sys.exc_info()
         if etype is not None:
-            err_msg="  "+"  ".join(traceback.format_exception_only(etype,exc))
-            post_msg="If the error keeps occuring, contact the developer."
-            self._show_message_box("Error","An error arose:\n\n{}\n{}".format(err_msg,post_msg))
+            self.error_msg="  ".join(traceback.format_exception_only(etype,exc)).strip()
 error_display=ErrorBoxDisplay()
 
 
@@ -740,9 +738,10 @@ def execute(app=None):
         app=prepare_app()
     gui=controller.get_gui_controller()
     if not console:
-        controller.add_exception_hook("error_message",error_display.show_message,single_call=True)
+        controller.add_exception_hook("error_message",error_display.on_error,single_call=True)
     gui.started.connect(start_app)
     app.exec_()
+    error_display.check_for_error()
 if __name__=="__main__":
     execute()
     os.chdir(startdir)
