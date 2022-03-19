@@ -101,7 +101,7 @@ class StandaloneFrame(container.QWidgetContainer):
         self.setWindowTitle("{} control".format(cam_display_name))
         self.setWindowIcon(QtGui.QIcon("icon.ico"))
         self.cam_ctl=camera_control.GenericCameraCtl(
-            cam_thread=cam_thread,frame_src_thread=process_thread,preprocess_thread=preprocess_thread,
+            cam_thread=cam_thread,frame_src_thread=process_thread,
             save_thread=save_thread,snap_save_thread=snap_save_thread,resource_manager_thread=resource_manager_thread,
             frame_tag="frames/new/show",cam_name=cam_name,settings=settings)
         self.add_child("cam_controller",self.cam_ctl,gui_values_path="cam")

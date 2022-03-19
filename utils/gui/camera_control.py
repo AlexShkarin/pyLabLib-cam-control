@@ -1,4 +1,5 @@
 from pylablib.core.thread import controller
+from pylablib.core.dataproc import transform
 from pylablib.core.gui.widgets import container
 from pylablib.thread.stream.stream_message import FramesMessage
 
@@ -21,13 +22,12 @@ class GenericCameraCtl(container.QContainer):
     
     In addition, widget classes can connect controller methods to some of the GUI events (usually, button clicks).
     """
-    def __init__(self, cam_thread="camera", frame_src_thread=None, save_thread=None, snap_save_thread=None, preprocess_thread=None, resource_manager_thread=None, frame_tag="frames/new", cam_name=None, settings=None):
+    def __init__(self, cam_thread="camera", frame_src_thread=None, save_thread=None, snap_save_thread=None, resource_manager_thread=None, frame_tag="frames/new", cam_name=None, settings=None):
         super().__init__()
         self.cam_thread=cam_thread
         self.dev=None
         self.save_thread=save_thread
         self.snap_save_thread=snap_save_thread
-        self.preprocess_thread=preprocess_thread
         self.resource_manager_thread=resource_manager_thread
         self.frame_src_thread=frame_src_thread or cam_thread
         self.cam_name=cam_name
@@ -272,27 +272,41 @@ class GenericCameraCtl(container.QContainer):
             binning=(max(frame.shape)-1)//max_size+1
             self.c["plotter_area"].set_binning(binning,binning,bin_mode,update_image=False)
         self.c["plotter_area"].set_image(frame)
-        if self.c["plotter_area"].update_image():
-            self.image_updated.emit()
-            self._last_shown_frame=frame
-            if self.resource_manager:
-                self.resource_manager.csi.update_resource("frame/display","standard",frame=frame)
+        if self.c["plotter_area"].update_expected():
+            roi=tuple(msg.mi.roi)+(1,1)
+            trans=transform.Indexed2DTransform().multiplied([[0,roi[4]],[roi[5],0]]).shifted([roi[0],roi[2]])
+            self.c["plotter_area"].set_coordinate_system("frame",trans=trans)
+            if self.c["plotter_area"].update_image():
+                self.image_updated.emit()
+                self._last_shown_frame=frame
+                if self.resource_manager:
+                    self.resource_manager.csi.update_resource("frame/display","standard",frame=frame)
+    def add_child(self, name, widget, gui_values_path=True, add_change_event=True):
+        result=super().add_child(name, widget, gui_values_path, add_change_event)
+        if name=="plotter_area":
+            widget.set_coordinate_system("frame",src="image",label="Frame")
+            widget.set_rectangle("new_roi",coord_system="frame")
+            widget.set_rectangle("full_roi",coord_system="frame")
+        return result
     def plot_control(self, comm, val):
         """Process image plotting control messages (e.g., drawing commands)"""
         if "plotter_area" not in self.c:
             return
         comm=[t for t in comm.split("/") if t]
         if comm[0]=="rectangles":
+            updated=False
             if comm[1]=="set":
-                self.c["plotter_area"].set_rectangle(*val)
+                updated=self.c["plotter_area"].set_rectangle(*val)
             elif comm[1]=="del":
                 self.c["plotter_area"].del_rectangle(val)
             elif comm[1]=="show":
-                self.c["plotter_area"].show_rectangles(True,names=val)
+                updated=self.c["plotter_area"].show_rectangles(True,names=val)
             elif comm[1]=="hide":
-                self.c["plotter_area"].show_rectangles(False,names=val)
+                updated=self.c["plotter_area"].show_rectangles(False,names=val)
             else:
                 raise ValueError("unrecognized rectangle command: {}".format(comm[1:]))
+            if updated:
+                self.c["plotter_area"].update_image(do_redraw=True)
         else:
             raise ValueError("unrecognized rectangle command: {}".format(comm))
 

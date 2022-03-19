@@ -102,6 +102,8 @@ class ICameraSettings_GUI(container.QWidgetContainer):
         for p in self._gui_parameters:
             p.display(parameters)
     def set_all_values(self, value):
+        for p in self._gui_parameters:
+            p.on_set_all_values(value)
         self._default_values=value.copy()
         return super().set_all_values(value)
     def get_all_values(self):

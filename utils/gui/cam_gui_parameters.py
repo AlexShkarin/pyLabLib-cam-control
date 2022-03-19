@@ -1,6 +1,7 @@
 from pylablib.core.thread import controller
 from pylablib.gui.widgets import range_controls
 
+import numpy as np
 
 class IGUIParameter:
     """
@@ -27,6 +28,13 @@ class IGUIParameter:
     def _update_value(self, v):
         self.settings.update_parameter_value(allow_diff_update=self._is_diff_update_allowed(self._current_value,v))
         self._current_value=v
+    def on_set_all_values(self, values):
+        """
+        Set all values given the dictionary.
+        
+        Note that after this method a regular GUI ``set_all_values`` method is used, which may overwrite some of the applied changes.
+        However, the dictionary can be modified to affect later changes.
+        """
     def add(self, base):
         """Add the parameter to the given base widget (a parameter table)"""
         self.base=base
@@ -274,7 +282,7 @@ class ROIGUIParameter(IGUIParameter):
         super().__init__(settings)
         self.bin_kind=bin_kind
         self.roi_kind=roi_kind
-        self.cam_roi=None
+        self.detector_size=None
     
     def add(self, base):
         self.base=base
@@ -284,11 +292,18 @@ class ROIGUIParameter(IGUIParameter):
         self.roi_ctl.params.set_enabled("y_bin",self.bin_kind not in {"same","none"})
         self.roi_ctl.set_value(((0,1E5,1),(0,1E5,1)))
         base.add_custom_widget("roi",self.roi_ctl)
-        @controller.exsafe
-        def _full_roi():
-            xp,yp=self.roi_ctl.get_value()
-            self.roi_ctl.set_value(((self.roi_ctl.xlim[0],self.roi_ctl.xlim[1],xp[2]),(self.roi_ctl.ylim[0],self.roi_ctl.ylim[1],yp[2])))
-        base.add_button("set_full_roi","Full ROI",add_indicator=False,location=("next",2,1,1)).get_value_changed_signal().connect(lambda v: _full_roi())
+        with base.using_new_sublayout("roi_buttons","hbox",location=("next",0,1,"end")):
+            @controller.exsafe
+            def _select_roi(v):
+                if "plotter_area" in self.settings.cam_ctl.c:
+                    self.settings.cam_ctl.c["plotter_area"].enable_selection_frame(v,image_bound=False)
+            base.add_toggle_button("select_roi","Select in image",add_indicator=False,location=("next",2,1,1)).get_value_changed_signal().connect(_select_roi)
+            base.add_padding()
+            @controller.exsafe
+            def _full_roi():
+                xp,yp=self.roi_ctl.get_value()
+                self.roi_ctl.set_value(((self.roi_ctl.xlim[0],self.roi_ctl.xlim[1],xp[2]),(self.roi_ctl.ylim[0],self.roi_ctl.ylim[1],yp[2])))
+            base.add_button("set_full_roi","Maximize",add_indicator=False,location=("next",2,1,1)).get_value_changed_signal().connect(_full_roi)
         with base.using_new_sublayout("show_rectangles","hbox",location=("next",0,1,"end")):
             base.add_check_box("show_gui_roi","Show selected ROI",add_indicator=False)
             base.add_check_box("show_det_size","Show full frame",add_indicator=False)
@@ -299,43 +314,30 @@ class ROIGUIParameter(IGUIParameter):
             base.get_sublayout().setColumnStretch(1,1)
         for n in ["roi","show_gui_roi","show_det_size"]:
             base.vs[n].connect(lambda v: self.on_changed())
-        for n in ["roi","set_full_roi"]:
-            base.vs[n].connect(controller.exsafe(self._update_value))
-        self.cam_roi=None
+        base.vs["roi"].connect(controller.exsafe(self._update_value))
+        if "plotter_area" in self.settings.cam_ctl.c:
+            self.settings.cam_ctl.c["plotter_area"].frame_selected.connect(self.on_roi_select)
+    @controller.exsafe
+    def on_roi_select(self):
+        p1,p2=self.settings.cam_ctl.c["plotter_area"].get_selection_frame("frame")
+        p1,p2=np.sort([p1,p2],axis=0).astype("int")
+        xp,yp=self.roi_ctl.get_value()
+        self.roi_ctl.set_value(((p1[0],p2[0],xp[2]),(p1[1],p2[1],yp[2])))
+        self.base.v["select_roi"]=False
     @controller.exsafe
     def on_changed(self):
-        if self.cam_roi is not None:
+        if self.detector_size is not None:
             cam_ctl=self.settings.cam_ctl
             current_roi=self.roi_ctl.get_value()
-            det_size=(self.roi_ctl.xlim[1],self.roi_ctl.ylim[1])
-            if cam_ctl.preprocess_thread is not None:
-                preprocessor=controller.sync_controller(cam_ctl.preprocess_thread)
-                prep_bin=preprocessor.v["params/spat/bin"] if preprocessor.v["enabled"] else (1,1)
-            else:
-                prep_bin=(1,1)
-            def _rel_span(src, dst):
-                return dst[0]-src[0],dst[1]-src[0]
-            full_bin=self.cam_roi[0][2]*prep_bin[1],self.cam_roi[1][2]*prep_bin[0]
-            if self.bin_kind=="same":
-                full_bin=full_bin[0],full_bin[0]
-            x_cam_span=self.cam_roi[0][0]/full_bin[0],self.cam_roi[0][1]/full_bin[0]
-            y_cam_span=self.cam_roi[1][0]/full_bin[1],self.cam_roi[1][1]/full_bin[1]
-            x_gui_span=current_roi[0][0]/full_bin[0],current_roi[0][1]/full_bin[0]
-            y_gui_span=current_roi[1][0]/full_bin[1],current_roi[1][1]/full_bin[1]
-            x_rel_span=_rel_span(x_cam_span,x_gui_span)
-            y_rel_span=_rel_span(y_cam_span,y_gui_span)
-            center=(y_rel_span[0]+y_rel_span[1])/2,(x_rel_span[0]+x_rel_span[1])/2
-            size=y_rel_span[1]-y_rel_span[0],x_rel_span[1]-x_rel_span[0]
-            cam_ctl.plot_control("rectangles/set",("new_roi",center,size))
+            current_roi_size=np.array([current_roi[0][1]-current_roi[0][0],current_roi[1][1]-current_roi[1][0]])
+            current_roi_center=np.array([current_roi[0][1]+current_roi[0][0],current_roi[1][1]+current_roi[1][0]])/2
+            cam_ctl.plot_control("rectangles/set",("new_roi",current_roi_center,current_roi_size))
             cam_ctl.plot_control("rectangles/"+("show" if self.settings.v["show_gui_roi"] else "hide"),("new_roi",))
-            x_det_span=(0,det_size[0]/full_bin[0])
-            y_det_span=(0,det_size[1]/full_bin[1])
-            x_rel_span=_rel_span(x_cam_span,x_det_span)
-            y_rel_span=_rel_span(y_cam_span,y_det_span)
-            center=(y_rel_span[0]+y_rel_span[1])/2,(x_rel_span[0]+x_rel_span[1])/2
-            size=y_rel_span[1]-y_rel_span[0],x_rel_span[1]-x_rel_span[0]
-            cam_ctl.plot_control("rectangles/set",("det_size",center,size))
-            cam_ctl.plot_control("rectangles/"+("show" if self.settings.v["show_det_size"] else "hide"),("det_size",))
+            det_size=(self.roi_ctl.xlim[1],self.roi_ctl.ylim[1])
+            full_roi_size=np.array(det_size)
+            full_roi_center=np.array(det_size)/2
+            cam_ctl.plot_control("rectangles/set",("full_roi",full_roi_center,full_roi_size))
+            cam_ctl.plot_control("rectangles/"+("show" if self.settings.v["show_det_size"] else "hide"),("full_roi",))
 
     def setup(self, parameters, full_info):
         if not all(p in parameters for p in ["roi","roi_limits"]):
@@ -344,12 +346,18 @@ class ROIGUIParameter(IGUIParameter):
             hlim,vlim=parameters["roi_limits"]
             maxbin=max(hlim.maxbin,vlim.maxbin)
             self.roi_ctl.set_limits(xlim=(0,hlim.max),ylim=(0,vlim.max),minsize=(hlim.min,vlim.min),maxbin=maxbin)
+            self.detector_size=(hlim.max,vlim.max)
+    def on_set_all_values(self, values):
+        if "select_roi" in values:
+            del values["select_roi"]
     def collect(self, parameters):
         xroi,yroi=self.settings.v["roi"]
         roi_len={"both":6,"same":5,"none":4}[self.bin_kind]
         parameters["roi"]=(xroi.min,xroi.max,yroi.min,yroi.max,xroi.bin,yroi.bin)[:roi_len]
         super().collect(parameters)
     def display(self, parameters):
+        if "roi" not in parameters:
+            return
         roi=parameters["roi"]
         roi_str="[{:d} - {:d}] x [{:d} - {:d}]".format(*roi)
         if self.bin_kind=="same":
@@ -361,6 +369,4 @@ class ROIGUIParameter(IGUIParameter):
         ybin=roi[5] if len(roi)>5 else xbin
         size_str="{:d} x {:d}".format((roi[1]-roi[0])//xbin,(roi[3]-roi[2])//ybin)
         self.settings.v["size_indicator"]=size_str
-        self.cam_roi=(roi[0],roi[1],(roi[4] if len(roi)>4 else 1)),(roi[2],roi[3],(roi[5] if len(roi)>5 else 1))
-        self.on_changed()
         super().display(parameters)
