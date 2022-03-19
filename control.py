@@ -580,7 +580,7 @@ class MissingSettingsFrame(param_table.ParamTable):
     def import_settings(self):
         if not self.selected:
             self.selected=True
-            path,_=QtWidgets.QFileDialog.getOpenFileName(self,"Import config...",filter="Config Files (*.cfg);;All Files (*)")
+            path,_=QtWidgets.QFileDialog.getOpenFileName(self,"Import config...",filter="Settings Config (settings.cfg);;Config Files (*.cfg);;All Files (*)")
             if path:
                 self.hide()
                 self._copy_settings(path,self.path)

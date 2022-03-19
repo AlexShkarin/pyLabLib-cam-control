@@ -279,7 +279,7 @@ class FilterThread(controller.QTaskThread):
         self.tag_out=tag_out or tag+"/show"
         self.add_command("set_filter")
         self.add_command("remove_filter")
-        self.add_command("get_new_data")
+        self.add_command("get_new_data",priority=-5)
         self.add_command("enable")
         self.add_command("set_parameter")
         self.add_job("update_parameters",self.update_parameters,0.5,priority=0)
