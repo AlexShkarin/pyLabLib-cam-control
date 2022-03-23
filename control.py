@@ -592,7 +592,7 @@ class MissingSettingsFrame(param_table.ParamTable):
             self.selected=True
             self.hide()
             pythonexec=os.path.join(os.path.split(sys.executable)[0],"python.exe")
-            subprocess.call([pythonexec,"detect.py","--yes","--wait"])
+            subprocess.call([pythonexec,"detect.py","--yes","--wait","--config-file",self.path])
             start_app(ask_on_no_cam=False)
 
 class ErrorBoxDisplay:

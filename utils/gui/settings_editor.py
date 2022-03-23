@@ -102,9 +102,11 @@ class SettingsEditor(widgets.QWidgetContainer):
             self.defined_settings[name]=(table,name)
             display_desc(table.v[vname])
     def add_bool_parameter(self, table: widgets.ParamTable, name, label, default=False, description=("Off","On")):
+        """Add a boolean settings parameters"""
         table.add_check_box("value/"+name,"",value=default,label=label,location=("next",1,1,2))
         self.decorate_parameter(table,name,default=default,descfunc=lambda v: description[1 if v else 0])
     def add_choice_parameter(self, table: widgets.ParamTable, name, label, options, default=None, description=None):
+        """Add a combobox settings parameters"""
         ovals,olabels=list(zip(*options.items()))
         if default is None:
             default=ovals[0]
@@ -112,16 +114,20 @@ class SettingsEditor(widgets.QWidgetContainer):
         description=options if description is None else description
         self.decorate_parameter(table,name,default=default,descfunc=lambda v: description.get(v,v))
     def add_integer_parameter(self, table: widgets.ParamTable, name, label, limits=(0,None), default=0):
+        """Add an integer settings parameters"""
         table.add_num_edit("value/"+name,value=default,label=label,limiter=limits+("coerce","int"),formatter="int",location=("next",1,1,2))
         self.decorate_parameter(table,name,default=default)
     def add_string_parameter(self, table: widgets.ParamTable, name, label, default=""):
+        """Add a string settings parameters"""
         table.add_text_edit("value/"+name,value=default,label=label,location=("next",1,1,2))
         self.decorate_parameter(table,name,default=default)
     def add_float_parameter(self, table: widgets.ParamTable, name, label, limits=(0,None), fmt=".1f", default=0):
+        """Add a float settings parameters"""
         table.add_num_edit("value/"+name,value=default,label=label,limiter=limits,formatter=fmt,location=("next",1,1,2))
         self.decorate_parameter(table,name,default=default)
 
     def setup_settings(self, table: widgets.ParamTable):
+        """Setup the settings table in the given widget"""
         table.setup(add_indicator=False)
         cam_table=hasattr(table,"camera")
         table.add_decoration_label("Override global" if cam_table else "",location=(0,0,1,2))

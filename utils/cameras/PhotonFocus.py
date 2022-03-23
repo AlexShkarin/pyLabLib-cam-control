@@ -67,6 +67,7 @@ class IMAQPhotonFocusCameraThread(BaseIMAQPhotonFocusCameraThread):
             self.device.configure_trigger_out(self.out_trigger_dst[0],self.out_trigger_dst[1],"high","disable")
     def _update_additional_parameters(self, parameters):
         parameters["trigger_mode"]=self._get_trigger_mode()
+        super()._update_additional_parameters(parameters)
     def _read_send_images(self):
         nsent=super()._read_send_images()
         for name,par in self.trigger_monitors.items():

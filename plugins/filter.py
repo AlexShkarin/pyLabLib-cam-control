@@ -405,6 +405,8 @@ class FilterPlugin(base.IPlugin):
         self.unload_filter()
         return super().cleanup()
     def set_all_values(self, values):
+        if values.get("ctl_tab/enabled",False) and values.get("ctl_tab/loaded",False):
+            values["ctl_tab/enabled"]=False
         super().set_all_values(values)
         self.proc_indicator.update_indicators()
 
