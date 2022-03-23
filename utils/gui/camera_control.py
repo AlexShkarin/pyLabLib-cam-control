@@ -165,12 +165,10 @@ class GenericCameraCtl(container.QContainer):
         if frame is not None:
             self.ctl.send_multicast(self.snap_save_thread,tag="frames/new/snap",value=FramesMessage([frame]))
     @controller.exsafe
-    def write_event_log(self):
+    def write_event_log(self, message):
         """Write an event to the saving event log"""
         if self.saver:
-            params=self.settings.get("saving/defaults",{})
-            params.update(self.c["savebox"].collect_parameters(resolve_path=False))
-            self.saver.ca.write_event_log(params["event_msg"])
+            return self.saver.cad.write_event_log(message)
     @controller.exsafe
     def setup_pretrigger(self):
         """Setup pretrigger according to the GUI saver settings"""
@@ -183,6 +181,13 @@ class GenericCameraCtl(container.QContainer):
         """Clear pretrigger buffer"""
         if self.saver:
             self.saver.ca.clear_pretrigger()
+    @controller.exsafe
+    def setup_stream_mode(self):
+        """Setup streaming mode"""
+        if self.saver:
+            params=self.settings.get("saving/defaults",{})
+            params.update(self.c["savebox"].collect_parameters(resolve_path=False))
+            self.saver.ca.setup_streaming(single_shot=params["stream_mode"]=="single_shot")
         
     # Obtain all parameters from the camera
     def get_thread_parameters(self):

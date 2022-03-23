@@ -396,7 +396,6 @@ class StandaloneFrame(container.QWidgetContainer):
         self.gui_level=level
         if level=="simple":
             self.control_tabs.remove_tab("proc_tab")
-            self.saving_settings_table.params.set_visible(["event_msg","log_event"],False)
     def _update_plugin_parameters(self):
         """Update ``_plugin_parameters`` attribute to reflect current plugin parameters"""
         for name,plugin in self._ordered_plugins():
@@ -644,7 +643,8 @@ def start_threads(settings):
     services.FrameSlowdownThread(slowdown_thread,kwargs={"src":preprocess_thread,"tag_in":"frames/new"}).start()
     services.FrameProcessorThread(process_thread,kwargs={"src":slowdown_thread,"tag_in":"frames/new"}).start()
     services.ChannelAccumulator(channel_accumulator_thread,kwargs={"settings":settings.get("interface/trace_plotter")}).start()
-    services.FrameSaveThread(save_thread,kwargs={"src":preprocess_thread,"tag":"frames/new","settings_mgr":settings_manager_thread,"frame_processor":process_thread}).start()
+    services.FrameSaveThread(save_thread,kwargs={"src":preprocess_thread,"tag":"frames/new",
+        "settings_mgr":settings_manager_thread,"frame_processor":process_thread,"garbage_collector":garbage_collector_thread}).start()
     services.FrameSaveThread(snap_save_thread,kwargs={"src":"any","tag":"frames/new/snap","settings_mgr":settings_manager_thread}).start()
     services.SettingsManager(settings_manager_thread).start()
     services.ResourceManager(resource_manager_thread).start()

@@ -3,7 +3,7 @@ from pylablib.devices import PhotonFocus
 from pylablib.devices.interface import camera as camera_utils
 
 from pylablib.core.thread import controller
-from pylablib.core.utils import dictionary, files as file_utils, funcargparse
+from pylablib.core.utils import dictionary, files as file_utils, funcargparse, string as string_utils
 from pylablib.core.fileio import savefile, loadfile, table_stream, location
 from pylablib.core.dataproc import image
 from pylablib.thread.stream import frameproc, table_accum, stream_manager
@@ -362,12 +362,13 @@ class FrameSaveThread(controller.QTaskThread):
         clear_pretrigger: clear pretrigger buffer
         setup_queue_ram: setup maximal saving queue RAM
     """
-    def setup_task(self, src, tag, settings_mgr=None, frame_processor=None):
+    def setup_task(self, src, tag, settings_mgr=None, frame_processor=None, garbage_collector=None):
         self.subscribe_commsync(self.receive_frames,srcs=src,tags=tag,limit_queue=100)
         self.settings_mgr=settings_mgr
         self._cam_settings_time="before" # ``"before"`` - get full camera settings in the beginning of saving; ``"after"`` - get them in the end of saving
         self.frame_processor=frame_processor
         self._save_queue=None
+        self.garbage_collector=garbage_collector
         self._pretrigger_buffer=None
         self._clear_pretrigger_on_write=True
         self._saving=False
@@ -387,6 +388,7 @@ class FrameSaveThread(controller.QTaskThread):
         self.background_desc={}
         self._file_idx=0
         self.chunks_per_save=1
+        self.single_shot=False
         self.chunk_period=0.2
         self.dumping_period=0.02
         self._event_log_started=False
@@ -409,6 +411,7 @@ class FrameSaveThread(controller.QTaskThread):
         self.add_command("save_start",self.save_start)
         self.add_command("save_stop",self.save_stop)
         self.add_command("setup_queue_ram",self.setup_queue_ram)
+        self.add_command("setup_streaming",self.setup_streaming)
         self.add_command("write_event_log",self.write_event_log)
         self.add_command("setup_pretrigger",self.setup_pretrigger)
         self.add_command("clear_pretrigger",self.clear_pretrigger)
@@ -446,12 +449,27 @@ class FrameSaveThread(controller.QTaskThread):
     def setup_queue_ram(self, max_queue_ram):
         self.v["max_queue_ram"]=max_queue_ram
         # self._frame_scheduler.change_max_size((self._frame_scheduler.max_size[0],self.v["max_queue_ram"]))
+    def _enable_garbage_collect(self, enabled):
+        if self.garbage_collector:
+            try:
+                garbage_collector=controller.get_controller(self.garbage_collector,sync=False)
+                garbage_collector.setup(enabled=enabled)
+            except controller.threadprop.NoControllerThreadError:
+                pass
+    def setup_streaming(self, single_shot=None):
+        if single_shot is not None:
+            self.single_shot=single_shot
+            if self._saving and not self._stopping:
+                self._enable_garbage_collect(not single_shot)
+
     def _update_queue_ram(self, queue_ram=None):
         if queue_ram is not None:
             self.v["queue_ram"]=queue_ram
         # self._frame_scheduler.change_max_size((self._frame_scheduler.max_size[0],self.v["max_queue_ram"]-self.v["queue_ram"]))
     def dump_queue(self):
         """Dump one or several chunks from the saving queue to the disk"""
+        if self.single_shot and not self._stopping:
+            return
         queue_empty=False
         append=(self.v["saved"]>0) or self.append
         for _ in range(self.chunks_per_save):
@@ -624,14 +642,15 @@ class FrameSaveThread(controller.QTaskThread):
                     else:
                         file_utils.retry_remove(path)
                 preamble="Timestamp\tElapsed\tIndex\tSaved\tMessage\n"
-                preamble+="{:.3f}\t{:.3f}\t{:d}\t{:d}\t{}\n".format(self._start_time,0,self._first_frame_idx or 0,0,"Recording started")
+                preamble+="{:.3f}\t{:.3f}\t{:d}\t{:d}\t{}\n".format(self._start_time,0,self._first_frame_idx or 0,0,string_utils.escape_string("Recording started",location="parameter"))
             with open(path,"a") as f:
                 t=time.time()
-                line="{:.3f}\t{:.3f}\t{:d}\t{:d}\t{}\n".format(t,t-self._start_time,self._last_frame_idx or 0,max(self.v["saved"]-1,0),msg)
+                line="{:.3f}\t{:.3f}\t{:d}\t{:d}\t{}\n".format(t,t-self._start_time,self._last_frame_idx or 0,max(self.v["saved"]-1,0),string_utils.escape_string(msg,location="parameter"))
                 if preamble:
                     f.write(preamble)
                 f.write(line)
             self._event_log_started=True
+            return (t,t-self._start_time,msg)
 
     def _check_status_line(self, frames, step=1):
         for f in frames:
@@ -837,6 +856,8 @@ class FrameSaveThread(controller.QTaskThread):
         self._update_queue_ram(0)
         self._stopping=False
         self._saving=True
+        if self.single_shot:
+            self._enable_garbage_collect(False)
         self._file_idx=0
         self.v["status_line_check"]="na" if perform_status_check else "off"
         self._last_frame_statusline_idx=None
@@ -863,6 +884,7 @@ class FrameSaveThread(controller.QTaskThread):
         """Stop saving routine"""
         if self._saving and not self._stopping:
             self._stopping=True
+            self._enable_garbage_collect(self.single_shot)
             self.update_status("saving","stopping",text="Finishing saving")
 
 

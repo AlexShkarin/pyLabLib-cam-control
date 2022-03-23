@@ -2,12 +2,74 @@ from pylablib.core.thread import controller
 from pylablib.core.gui.widgets import container, param_table
 from pylablib.core.utils import files as file_utils, general
 
-from pylablib.core.gui import QtWidgets, qtkwargs
+from pylablib.core.gui import QtWidgets, QtCore, QtGui, qtkwargs
 
 import os
 import datetime
 import re
 
+
+
+class MessageLogWindow(container.QWidgetContainer):
+    def setup(self, cam_ctl):
+        super().setup()
+        self.cam_ctl=cam_ctl
+        self.setWindowTitle("Record events")
+        self.setWindowFlag(QtCore.Qt.Dialog)
+        self.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint,False)
+        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint,False)
+        self.params=self.add_child("params",param_table.ParamTable(self))
+        self.params.setup(add_indicator=False)
+        self.params.add_decoration_label("Message",location=(0,0,1,1))
+        self.params.add_text_edit("event_msg",value="",multiline=True,location=(1,0,1,1))
+        with self.params.using_new_sublayout("button","hbox",location=(2,0,1,2)):
+            self.params.add_button("log_event","Record")
+            self.params.vs["log_event"].connect(self._on_log_event)
+            self.params.add_padding()
+        self.params.add_decoration_label("Recorded",location=(0,1,1,1))
+        self.params.add_text_edit("recorded_events",value="",multiline=True,location=(1,1,1,1))
+        self.params.w["recorded_events"].setReadOnly(True)
+        self.params.add_padding("vertical",location=(1,0,1,1))
+        self.params.set_column_stretch([1,1])
+        self.params.set_row_stretch([0,1,0])
+        self.on_stop_recording()
+        self._log_results=[]
+        self._recorded_text=""
+        self._recording=False
+        self.setMinimumSize(500,300)
+        self.add_property_element("window/size",
+            lambda: (self.size().width(),self.size().height()), lambda v: self.resize(*v), add_indicator=False)
+        self.add_property_element("window/position",
+            lambda: (self.geometry().x(),self.geometry().y()), lambda v: self.setGeometry(v[0],v[1],self.size().width(),self.size().height()), add_indicator=False)
+    def update(self):
+        """Update recorded messages"""
+        unfinished=[]
+        for r in self._log_results:
+            if r.is_call_done():
+                v=r.get_value()[1]
+                vstr="[{:%Y/%M/%d %H:%M:%S}]  {:.2f}\n{}\n\n".format(datetime.datetime.fromtimestamp(v[0]),v[1],v[2])
+                self.v["recorded_events"]=self.v["recorded_events"]+vstr
+                self.w["recorded_events"].moveCursor(QtGui.QTextCursor.End)
+            else:
+                unfinished.append(r)
+        self._log_results=unfinished
+    @controller.exsafe
+    def _on_log_event(self):
+        if self._recording:
+            res=self.cam_ctl.write_event_log(self.params.v["event_msg"])
+            self._log_results.append(res)
+    def on_start_recording(self):
+        self._recording=True
+        self._log_results=[]
+        self.v["recorded_events"]=""
+        self.params.set_enabled("log_event",True)
+    def on_stop_recording(self):
+        self.params.set_enabled("log_event",False)
+        self._recording=False
+    def get_all_values(self):
+        values=super().get_all_values()
+        del values["recorded_events"]
+        return values
 
 ##### Saving parameter tables #####
 
@@ -65,12 +127,15 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.add_button("pretrigger_clear","Clear pretrigger",location=("next",2,1,1))
         self.params.vs["pretrigger_clear"].connect(self.cam_ctl.clear_pretrigger)
         self.params.add_check_box("save_settings",value=True,caption="Save settings",location=(-1,0,1,2))
+        self.params.add_combo_box("stream_mode",label="Disk streaming",options={"cont":"Continuous","single_shot":"Single-shot"},location=("next",0,1,3))
+        self.params.vs["stream_mode"].connect(self.cam_ctl.setup_stream_mode)
         self.params.add_toggle_button("saving","Saving",location=("next",0,1,3))
         self.params.vs["saving"].connect(lambda v: self.cam_ctl.toggle_saving(mode="full",start=v))
-        self.params.add_decoration_label("Event log message:",location=("next",0,1,3))
-        self.params.add_text_edit("event_msg",value="",location=("next",0,1,3))
-        self.params.add_button("log_event","Log event",location=("next",1,1,1))
-        self.params.vs["log_event"].connect(self.cam_ctl.write_event_log)
+        self.message_log_window=MessageLogWindow(self)
+        self.message_log_window.setup(self.cam_ctl)
+        self.params.add_button("show_log_window","Record events...",location=("next",0,1,2))
+        self.params.vs["show_log_window"].connect(self.message_log_window.show)
+        self.params.add_child("message_log_window",self.message_log_window,gui_values_path="message_log_window",location="skip")
         self.params.add_spacer(5)
         with self.params.using_new_sublayout("snap_header","hbox"):
             self.params.add_decoration_label("Snapshot:")
@@ -115,7 +180,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.params.add_combo_box("snap_format",options=["Raw binary","TIFF"],index_values=["raw","tiff"],value="tiff")
         if self.expandable_edits:
             borders=(250,50) if self.compact_interface else (200,200)
-            for p in ["path","snap_path","event_msg"]:
+            for p in ["path","snap_path"]:
                 self.params.w[p].set_expandable(*borders)
         self.setEnabled(False)
 
@@ -192,7 +257,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
                 params["path"]=None
             params["path_kind"]="folder" if make_folder else "pfx"
         params["filesplit"]=self.v["filesplit"] if self.v["do_filesplit"] else None
-        for p in ["pretrigger_size","pretrigger_enabled","save_settings","event_msg","snap_display_source"]:
+        for p in ["pretrigger_size","pretrigger_enabled","stream_mode","save_settings","snap_display_source"]:
             params[p]=self.v[p]
         params["append"]=self.v["on_name_conflict"]=="append" and mode=="full"
         return params
@@ -213,14 +278,16 @@ class SaveBox_GUI(container.QGroupBoxContainer):
                 if params.get("frames/missed",0)>0 or params.get("frames/status_line_check","na") not in {"na","off","none","ok"}:
                     QtWidgets.QMessageBox.warning(self,"Problems with frames","Some frames are missing, duplicated, or out of order",QtWidgets.QMessageBox.Ok)
             self.w["saving"].set_value(False,notify_value_change=False)
+            self.message_log_window.on_stop_recording()
         if just_started:
             self.w["saving"].set_value(True,notify_value_change=False)
+            self.message_log_window.on_start_recording()
+        self.message_log_window.update()
         block_on_record=["path","browse","add_datetime","make_folder","on_name_conflict","format","limit_frames","do_filesplit","pretrigger_enabled","save_settings"]
         self.params.set_enabled(block_on_record,not record_in_progress)
         self.params.set_enabled(["batch_size"],self.v["limit_frames"] and not record_in_progress)
         self.params.set_enabled(["filesplit"],self.v["do_filesplit"] and not record_in_progress)
         self.params.set_enabled(["pretrigger_size","pretrigger_clear"],self.v["pretrigger_enabled"] and not record_in_progress)
-        self.params.set_enabled(["log_event"],record_in_progress)
         self.params.set_enabled("snap_displayed",self.v["snap_display_source"]!=-1)
     @controller.exsafe
     def update_display_source_options(self, reset_value=False):
