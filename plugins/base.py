@@ -247,6 +247,7 @@ class IPlugin:
         self.parameters=parameters or {}
         self.gui=gui
         self._running=False
+        self._gui_started=False
 
     _class_name=None  # default class name (by default, the class name)
     _class_caption=None  # default class caption (by default, same as name)
@@ -348,6 +349,7 @@ class IPlugin:
         Can be overloaded.
         Executed in the GUI thread.
         """
+        self._gui_started=True
 
 
 
