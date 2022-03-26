@@ -85,6 +85,10 @@ class ICameraSettings_GUI(container.QWidgetContainer):
         for p in self._gui_parameters:
             p.collect(parameters)
         return parameters
+    def on_connection_changed(self, connected):
+        """Notify parameters that the camera has just been connected"""
+        for p in self._gui_parameters:
+            p.on_connection_changed(connected)
     # Setup interface limits according to camera parameters
     def setup_gui_parameters(self, parameters, full_info):
         """Setup sub-widgets appearance"""

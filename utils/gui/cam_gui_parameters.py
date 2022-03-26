@@ -35,6 +35,8 @@ class IGUIParameter:
         Note that after this method a regular GUI ``set_all_values`` method is used, which may overwrite some of the applied changes.
         However, the dictionary can be modified to affect later changes.
         """
+    def on_connection_changed(self, connected):
+        """Notify that the camera has just been connected or disconnected"""
     def add(self, base):
         """Add the parameter to the given base widget (a parameter table)"""
         self.base=base
@@ -369,4 +371,43 @@ class ROIGUIParameter(IGUIParameter):
         ybin=roi[5] if len(roi)>5 else xbin
         size_str="{:d} x {:d}".format((roi[1]-roi[0])//xbin,(roi[3]-roi[2])//ybin)
         self.settings.v["size_indicator"]=size_str
+        super().display(parameters)
+
+
+
+
+class AttributesBrowserGUIParameter(IGUIParameter):
+    def __init__(self, settings, browser_class):
+        super().__init__(settings)
+        self.browser_class=browser_class
+    def _show_window(self, visible=True):
+        if visible:
+            if not self.window.isVisible():
+                self.window.showNormal()
+            else:
+                self.window.show()
+        else:
+            self.window.hide()
+    def add(self, base):
+        self.base=base
+        self.window=self.browser_class(self.base)
+        self.window.setup(self.settings.cam_ctl)
+        # self.base.add_toggle_button("show_attributes_window","Show attributes",add_indicator=False).get_value_changed_signal().connect(lambda v: self._show_window(v))
+        # self.window.closed.connect(lambda: self.base.set_value("show_attributes_window",False))
+        self.base.add_button("show_attributes_window","Show attributes",add_indicator=False).get_value_changed_signal().connect(lambda: self._show_window())
+        self.base.add_child("attributes_window",self.window,location="skip",gui_values_path="attributes_window")
+        self._connected=False
+        self._startup_done=False
+
+    def setup(self, parameters, full_info):
+        self.window.setup_parameters(full_info)
+        self.window.finalize_setup()
+    def on_connection_changed(self, connected):
+        self._connected=connected
+        self._startup_done=False
+    def display(self, parameters):
+        if self._connected and not self._startup_done and parameters.get("tag/initialized",False):
+            self.window.setup_startup()
+            self._startup_done=True
+        self.window.update_attributes()
         super().display(parameters)

@@ -96,6 +96,7 @@ class GenericCameraCtl(container.QContainer):
     def dev_disconnect(self):
         """Disconnect from the device (connected to a button in camera control)"""
         if self.dev is not None:
+            self.dev.ca.apply_parameters({"tag/initialized":False})
             self.dev.ca.close(keep_closed=True)
     @controller.exsafe
     def acq_start(self):
@@ -210,9 +211,14 @@ class GenericCameraCtl(container.QContainer):
             return
         connected=status=="opened"
         just_connected=connected and not self.connected
+        just_disconnected=not connected and self.connected
         self.connected=connected
         if just_connected:
+            if "settings" in self.c:
+                self.c["settings"].on_connection_changed(True)
             self.send_parameters()
+        if just_disconnected and "settings" in self.c:
+            self.c["settings"].on_connection_changed(False)
         self.update_parameters()
     def setup_gui_parameters(self):
         """Setup camera settings controller for the specific camera"""
@@ -261,6 +267,7 @@ class GenericCameraCtl(container.QContainer):
                         send_params[dp]=params[dp]
             else:
                 send_params=params
+            send_params["tag/initialized"]=True
             self.dev.ca.apply_parameters(send_params)
             self._last_parameters=params.copy()
     
