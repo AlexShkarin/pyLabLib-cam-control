@@ -4,7 +4,7 @@ from pylablib.core.utils import dictionary
 
 from .base import ICameraDescriptor
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
-from ..gui import cam_gui_parameters
+from ..gui import cam_gui_parameters, cam_attributes_browser
 
 
 
@@ -56,7 +56,7 @@ class ClearModeParameter(cam_gui_parameters.EnumGUIParameter):
     def setup(self, parameters, full_info):
         super().setup(parameters,full_info)
         if "parameter_ranges/clear_mode" in full_info:
-            self.base.w[self.gui_name].set_options(full_info["parameter_ranges/clear_mode"],index=0)
+            self.base.w[self.gui_name].set_options(dictionary.as_dict(full_info["parameter_ranges/clear_mode"]),index=0)
         else:
             self.disable()
 
@@ -96,17 +96,40 @@ class ReadoutModeParameter(cam_gui_parameters.EnumGUIParameter):
             self.disable()
 
 
+class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
+    def _add_attribute(self, name, attribute, value):
+        if not attribute.readable:
+            return
+        indicator=not attribute.writable
+        if attribute.kind in {"INT8","INT16","INT32","INT64","UNS8","UNS16","UNS32","UNS64"}:
+            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind in {"FLT32","FLT64"}:
+            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="ENUM":
+            self._record_attribute(name,"enum",attribute,indicator=indicator)
+            self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
+        elif attribute.kind=="CHAR_PTR":
+            self._record_attribute(name,"str",attribute,indicator=indicator)
+            self.add_string_parameter(name,attribute.name,indicator=indicator)
+        elif attribute.kind=="BOOLEAN":
+            self._record_attribute(name,"bool",attribute,indicator=indicator)
+            self.add_bool_parameter(name,attribute.name,indicator=indicator)
+
 class Settings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"
     _frame_period_kind="indicator"
     def get_basic_parameters(self, name):
         if name=="trigger_mode": return TriggerModeParameter(self)
+        if name=="exposure": return cam_gui_parameters.FloatGUIParameter(self,"exposure","Exposure (ms)",limit=(0,None),fmt=".4f",default=100,factor=1E3)
         return super().get_basic_parameters(name)
     def setup_settings_tables(self):
         super().setup_settings_tables()
         self.add_parameter(ReadoutModeParameter(self),"advanced")
         self.add_parameter(ClearModeParameter(self),"advanced")
         self.add_parameter(ClearCyclesParameter(self),"advanced")
+        self.add_parameter(cam_gui_parameters.AttributesBrowserGUIParameter(self,CamAttributesBrowser),"advanced")
 
 
 

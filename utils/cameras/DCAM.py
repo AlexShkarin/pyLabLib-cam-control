@@ -2,16 +2,14 @@ from pylablib.devices import DCAM
 from pylablib.thread.devices.DCAM import DCAMCameraThread
 
 from .base import ICameraDescriptor
-from ..gui import cam_gui_parameters
+from ..gui import cam_gui_parameters, cam_attributes_browser
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
 
 
 
 
 class DCAMOrcaCameraThread(DCAMCameraThread):
-    def _apply_additional_parameters(self, parameters):
-        super()._apply_additional_parameters(parameters)
-        self.device.set_defect_correct_mode(True)
+    parameter_variables=DCAMCameraThread.parameter_variables|{"defect_correct_mode"}
 
 class DCAMImagEMCameraThread(DCAMCameraThread):
     def _apply_additional_parameters(self, parameters):
@@ -23,6 +21,19 @@ class DCAMImagEMCameraThread(DCAMCameraThread):
         return super()._update_additional_parameters(parameters)
 
 
+class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
+    def _add_attribute(self, name, attribute, value):
+        indicator=not attribute.writable
+        if attribute.kind=="int":
+            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),default=attribute.default,indicator=indicator)
+        elif attribute.kind=="float":
+            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),default=attribute.default,indicator=indicator)
+        elif attribute.kind=="enum":
+            self._record_attribute(name,"enum",attribute,indicator=indicator)
+            self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
+
 
 
 class Settings_GUI(GenericCameraSettings_GUI):
@@ -31,12 +42,17 @@ class Settings_GUI(GenericCameraSettings_GUI):
     def setup_settings_tables(self):
         super().setup_settings_tables()
         self.add_parameter(cam_gui_parameters.EnumGUIParameter(self,"readout_speed","Readout speed",{"slow":"Slow","normal":"Normal","fast":"Fast"}),"advanced")
+        self.add_parameter(cam_gui_parameters.AttributesBrowserGUIParameter(self,CamAttributesBrowser),"advanced")
 
+class OrcaSettings_GUI(Settings_GUI):
+    def setup_settings_tables(self):
+        super().setup_settings_tables()
+        self.add_parameter(cam_gui_parameters.BoolGUIParameter(self,"defect_correct_mode","Defect correction",default=True),"advanced",row=-2)
 
 class ImagEMSettings_GUI(Settings_GUI):
     def setup_settings_tables(self):
         super().setup_settings_tables()
-        self.add_parameter(cam_gui_parameters.IntGUIParameter(self,"sensitivity","EMCCD sensitivity",(0,255)),"advanced")
+        self.add_parameter(cam_gui_parameters.IntGUIParameter(self,"sensitivity","EMCCD sensitivity",(0,255)),"advanced",row=-2)
 
 
 
@@ -101,6 +117,8 @@ class DCAMOrcaCameraDescriptor(DCAMCameraDescriptor):
         return "Hamamatsu Orca"
     def make_thread(self, name):
         return DCAMOrcaCameraThread(name=name,kwargs=self.settings["params"].as_dict())
+    def make_gui_control(self, parent):
+        return OrcaSettings_GUI(parent,cam_desc=self)
 
 
 class DCAMImagEMCameraDescriptor(DCAMCameraDescriptor):

@@ -1,7 +1,9 @@
 from pylablib.devices import IMAQdx
-from pylablib.thread.devices.IMAQdx import EthernetIMAQdxCameraThread
+from pylablib.thread.devices.IMAQdx import IMAQdxCameraThread, EthernetIMAQdxCameraThread
+from pylablib.core.thread import controller
 
 from .base import ICameraDescriptor
+from ..gui import cam_gui_parameters, cam_attributes_browser
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
 
 
@@ -26,7 +28,49 @@ class EthernetPhotonFocusIMAQdxCameraThread(EthernetIMAQdxCameraThread):
         return None
 
 
+class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
+    def setup(self, cam_ctl):
+        super().setup(cam_ctl)
+        with self.buttons.using_layout("buttons"):
+            self.buttons.add_combo_box("visibility",label="Visibility",options={"simple":"Simple","intermediate":"Intermediate","advanced":"Advanced"},value="simple",location=(0,0))
+            self.buttons.vs["visibility"].connect(self.setup_visibility)
+    def _add_attribute(self, name, attribute, value):
+        if not attribute.readable:
+            return
+        indicator=not attribute.writable
+        if attribute.kind in ["u32","i64"]:
+            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="f64":
+            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="enum":
+            self._record_attribute(name,"enum",attribute,indicator=indicator)
+            self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
+        elif attribute.kind=="str":
+            self._record_attribute(name,"str",attribute,indicator=indicator)
+            self.add_string_parameter(name,attribute.name,indicator=indicator)
+        elif attribute.kind=="bool":
+            self._record_attribute(name,"bool",attribute,indicator=indicator)
+            self.add_bool_parameter(name,attribute.name,indicator=indicator)
+    @controller.exsafe
+    def setup_visibility(self):
+        quick=self.buttons.v["quick_access"]
+        vis=self.buttons.v["visibility"]
+        vis_order=["simple","intermediate","advanced"]
+        for n in self._attributes:
+            vis_pass=vis_order.index(self._attributes[n].attribute.visibility)<=vis_order.index(vis)
+            self._show_attribute(n,(not quick or self.props_table.v["p_quick",n]) and vis_pass)
+    def setup_parameters(self, full_info):
+        super().setup_parameters(full_info)
+        self.setup_visibility()
 
+
+
+class Settings_GUI(GenericCameraSettings_GUI):
+    def setup_settings_tables(self):
+        super().setup_settings_tables()
+        self.add_parameter(cam_gui_parameters.AttributesBrowserGUIParameter(self,CamAttributesBrowser),"advanced")
 
 
 
@@ -59,9 +103,13 @@ class IMAQdxCameraDescriptor(ICameraDescriptor):
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
         return None,None
+    def get_kind_name(self):
+        return "Generic IMAQdx"
+    def make_thread(self, name):
+        return IMAQdxCameraThread(name=name,kwargs=self.settings["params"].as_dict())
     
     def make_gui_control(self, parent):
-        return GenericCameraSettings_GUI(parent,cam_desc=self)
+        return Settings_GUI(parent,cam_desc=self)
     def make_gui_status(self, parent):
         return GenericCameraStatus_GUI(parent,cam_desc=self)
 

@@ -2,13 +2,39 @@ from pylablib.devices import Andor
 from pylablib.thread.devices.Andor import AndorSDK3CameraThread, AndorSDK3ZylaThread
 
 from .base import ICameraDescriptor
+from ..gui import cam_gui_parameters, cam_attributes_browser
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
 
 
 
+class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
+    def _add_attribute(self, name, attribute, value):
+        if not attribute.readable:
+            return
+        indicator=not attribute.writable
+        if attribute.kind=="int":
+            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="float":
+            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="enum":
+            if attribute.values:
+                self._record_attribute(name,"enum",attribute,indicator=indicator)
+                self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
+        elif attribute.kind=="str":
+            self._record_attribute(name,"str",attribute,indicator=indicator)
+            self.add_string_parameter(name,attribute.name,indicator=indicator)
+        elif attribute.kind=="bool":
+            self._record_attribute(name,"bool",attribute,indicator=indicator)
+            self.add_bool_parameter(name,attribute.name,indicator=indicator)
+
 class Settings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"
     _frame_period_kind="value"
+    def setup_settings_tables(self):
+        super().setup_settings_tables()
+        self.add_parameter(cam_gui_parameters.AttributesBrowserGUIParameter(self,CamAttributesBrowser),"advanced")
 
 class StatusZyla_GUI(GenericCameraStatus_GUI):
     def setup_status_table(self):
