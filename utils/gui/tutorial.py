@@ -36,7 +36,7 @@ class TutorialBox(param_table.ParamTable):
         self.vs["prevst"].connect(exsafe(lambda: self.select_stage(*self._prev_stage(*self.stage))))
         self.vs["nextst"].connect(exsafe(lambda: self.select_stage(*self._next_stage(*self.stage))))
         self.set_row_stretch(1,1)
-        self.setFixedSize(400,150)
+        self.setFixedSize(400,200)
         self.main_frame=main_frame
         self.main_frame.closed.connect(self.close)
         self.hframe=highlighter.QHighlightFrame(self.main_frame)
@@ -116,10 +116,10 @@ class TutorialBox(param_table.ParamTable):
             "intro":["overview","navigation","further_info"],
             "camera":["overview","acquisition","connection","parameters"],
             "cam_status":["overview","name","connection","acquisition","frame_counters","buffer_status","fps","activity_indicator"],
-            "images":["overview","overview_image","overview_control","transflip","levels","normalize","histogram","color_scheme","lines","linecuts","updating"],
+            "images":["overview","overview_image","overview_control","transflip","levels","normalize","histogram","color_scheme","lines","coord_system","linecuts","updating"],
             "saving":["overview","standard","saving","path","path_modifiers","format","batch_size","filesplit","pretrigger_buffer","save_settings","event_log",
                         "snapshot","snap","snapshot_path","snapshot_use_main_path","snapshot_source","snapshot_format"],
-            "save_status":["overview","saving_process","saving_process_cont","received","saved","missed","status_line","saving_buffer","pretrigger"],
+            "save_status":["overview","saving_process","saving_process_cont","stream_mode","received","saved","missed","status_line","saving_buffer","pretrigger"],
             "extras":["overview","tutorial","cam_shortcut","preferences","about"],
             "processing":["overview","indicator","preproc/overview","preproc/spatial","preproc/temporal","preproc/dtype","preproc/enable",
                         "bgsub/overview","bgsub/method","bgsub/method_snapshot","bgsub/method_running","bgsub/comb_mode","bgsub/grab","bgsub/save","bgsub/enable",
@@ -187,7 +187,7 @@ class TutorialBox(param_table.ParamTable):
                     "This is the <b>camera status</b> panel. It displays the camera name, connection, and, most importantly, its buffer fill status.",
                         [cont]),
                 "name": ("Camera name and kind",
-                    "This is the <b>camera name and kind</b>. Camera name is built automatically based on its model and serial number.",
+                    "This is the <b>camera name and kind</b>. Camera name is generated automatically based on its model and serial number, but can be later changed in the <i>Preferences</i>.",
                         ["cam_name","cam_kind"]),
                 "connection": ("Connection",
                     ("Here is the <b>connection status</b>. Normally it should always read <i>Connected</i>. "
@@ -226,7 +226,7 @@ class TutorialBox(param_table.ParamTable):
                     "Here is the <b>image display</b> section. Depending on the installed plugins, more than one image display tab can be present (e.g., for filters).",
                         [self.main_frame.c["cam_controller/plotter_ctl"].parent().parent()]),
                 "overview_image": ("Image display",
-                    ("This is the main <b>image display</b>, which displays the image and (if enabled) the image histogram on the left "
+                    ("This is the main <b>image display</b>, which displays the image and (if enabled) the image histogram on the right "
                     "and the linecut plots on the bottom."),
                         [self.main_frame.c["cam_controller/plotter_area"]]),
                 "overview_control": ("Display control",
@@ -248,12 +248,18 @@ class TutorialBox(param_table.ParamTable):
                     "You can also change the <b>color scheme</b> by right-clicking on the <i>color bar</i>&nbsp; or dragging or changing color on the markers.",
                         ["show_histogram","auto_histogram_range"]),
                 "lines": ("Lines",
-                    ("Here you can enable a pair of <b>lines</b> in the image. You can move them either by dragging, or by entering their coordinates in the boxes. "
+                    ("Here you can enable a pair of <b>lines</b> in the image. You can move them by dragging,  entering their coordinates in the boxes, our by double-clicking on the image. "
                     "<i>Center lines</i>&nbsp; button recenters the lines within the image."),
                         ["show_lines","hlinepos","vlinepos","center_lines"]),
+                "coord_system": ("Coordinate system",
+                    ("This menu lets you select the <b>coordinate system</b> for the positions. "
+                    "The typical available options are <i>Display</i> for the displayed coordinates (after the image has been flipped/transposed), "
+                    "<i>Image</i> for the raw image coordinates before the transformation, "
+                    "and <i>Frame</i> for the camera frame coordinates, taking ROI and binning into account."),
+                        ["coord_system"]),
                 "linecuts": ("Line cuts",
                     ("You can also enable plotting <b>line cuts</b> for the enabled lines. "
-                    "If <i>Line cut width</i>&nbsp; is above 1, the line cuts are calculated by averaging several consecutive cuts together.<br> "
+                    "If <i>Line cut width</i>&nbsp; is above 1, the line cuts are calculated by averaging several adjacent cuts together.<br> "
                     "Note that plotting line cuts is relatively computation-intensive, so you should turn them off if the operation becomes laggy."),
                         ["show_linecuts","linecut_width"]),
                 "updating": ("Updating",
@@ -273,7 +279,7 @@ class TutorialBox(param_table.ParamTable):
                         [self.main_frame.c["cam_controller/savebox"]]),
                 "standard": ("Standard streaming",
                     "The top part controls the standard <b>data streaming</b>. This mode continuously saves all of the frames from the camera with minimal alterations.",
-                        [0,"log_event"]),
+                        [0,"show_log_window"]),
                 "saving": ("Saving button",
                     "This is the main button which <b>starts or stops data streaming</b>. In addition, if frame <i>Limit</i>&nbsp; is enabled, \
                         the streaming can stop automatically after a given number of frames.",
@@ -313,9 +319,9 @@ class TutorialBox(param_table.ParamTable):
                     "GUI state, and detailed stored data description. It is highly recommended to always store it."),
                         [("e","save_settings")]),
                 "event_log": ("Event log",
-                    ("Here you can <b>generate an event log</b>. This is a separate text file, which records the entered message together with its time and frame index "
-                    "whenever you press <i>Log event</i>&nbsp; button."),
-                        ["event_msg","log_event"]),
+                    ("This button brings up a separate window for <b>recording events</b> into a log. This is a separate text file, which records the entered message "
+                    "together with its time and frame index whenever you press <i>Record</i> button."),
+                        ["show_log_window"]),
                 "snapshot": ("Snapshot saving",
                     ("In addition to streaming raw camera data, you can also <b>save snapshots of displayed images</b>. It saves the images exactly as displayed "
                     "including all of the processing, e.g., background subtraction or filters. However, it only saves a single image."),
@@ -340,7 +346,7 @@ class TutorialBox(param_table.ParamTable):
             ch="Saving status"
             if show and self.main_frame.compact_interface:
                 self.main_frame.control_tabs.set_by_name("save_tab")
-            cont=self.main_frame.c["cam_controller/savestat"]
+            cont=self.main_frame.c["cam_controller/savestat"] if stage!="stream_mode" else self.main_frame.c["cam_controller/savebox/params"]
             stages={
                 "overview": ("Overview",
                     "This is the <b>save status</b> panel. It displays the number of received, saved, and missed frames, and the pretrigger status.",
@@ -355,6 +361,12 @@ class TutorialBox(param_table.ParamTable):
                     "If there are frames in the buffer by the time saving is stopped (either manually, or upon reaching the specified number of frames), "
                     "writing to the drive will continue until the buffer is empty. If the new saving is started in the meantime, these frames will be lost."),
                         [cont]),
+                "stream_mode": ("Streaming mode",
+                    ("In addition, you can choose between <i>Continuous</i> and <i>Single-shot</i> <b>streaming mode</b>. "
+                    "The continuous mode, as described above, streams the data to the drive during acquisition. "
+                    "The single-shot mode first stores all the acquired data to the buffer and only after the acquisition is  done, the buffer is saved to the drive. "
+                    "Since this mode can only be run for a finite time, it should only be used for extremely high data rates (>2Gb/s) to avoid saving-related lags during acquisition."),
+                        ["stream_mode"]),
                 "received": ("Received frames",
                     ("This is the <b>number of frames received and scheduled for saving</b>. These show how many frames have been received from the camera to be saved, "
                     "and how many of these are scheduled for saving. Ideally these two are the same, and they are only different if the frames are lost or if "
@@ -373,6 +385,7 @@ class TutorialBox(param_table.ParamTable):
                 "saving_buffer": ("Saving buffer",
                     ("This is the <b>saving buffer status</b> showing the current and the maximal size of this buffer. "
                     "As long as it is not completely full, everything is fine, and no frames are lost. "
+                    "The size of this buffer can be changed in <i>Preferences</i>. "
                     "You can find more details in the <a href='https://pylablib-cam-control.readthedocs.io/en/latest/pipeline.html#saving-buffer'>documentation</a>."),
                         ["frames/ram_status"]),
                 "pretrigger": ("Pretrigger buffer",
@@ -443,7 +456,7 @@ class TutorialBox(param_table.ParamTable):
                 "preproc/dtype": ("Prebinning / Frame data type",
                     ("With this checkbox you can <b>change the resulting frame type</b>. If unchecked, the result has the same type "
                     "as the original camera frame (usually an integer), which can affect the binning results due to rounding or integer overflows. Converting into float increases the "
-                    "result precision, but the data takes 4 times more space."),
+                    "result precision, but the data takes 4 or 8 times more space."),
                         ["convert_to_float"]),
                 "preproc/enable": ("Prebinning / Enable",
                     "Finally, here you can <b>enable or disable prebinning</b>.",
