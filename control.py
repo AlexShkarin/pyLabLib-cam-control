@@ -602,7 +602,7 @@ class ErrorBoxDisplay:
         if self.error_msg is None:
             return
         threadprop.get_app().closeAllWindows()
-        app=QtWidgets.QApplication([])
+        app=threadprop.get_app()
         frame=error_message.ErrorBox()
         frame.setup(self.error_msg)
         frame.show()
@@ -633,7 +633,7 @@ def load_config(path):
                 pylablib.par["devices/dlls",k]=v
     else:
         settings=dictionary.Dictionary()
-    settings["runtime/root_folder"]=os.path.abspath(".") if __name__=="__main__" else ""
+    settings["runtime/root_folder"]=os.path.abspath(".")
     settings["runtime/settings_src"]=os.path.abspath(path)
     return settings
 
