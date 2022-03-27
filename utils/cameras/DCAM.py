@@ -47,12 +47,12 @@ class Settings_GUI(GenericCameraSettings_GUI):
 class OrcaSettings_GUI(Settings_GUI):
     def setup_settings_tables(self):
         super().setup_settings_tables()
-        self.add_parameter(cam_gui_parameters.BoolGUIParameter(self,"defect_correct_mode","Defect correction",default=True),"advanced",row=-2)
+        self.add_parameter(cam_gui_parameters.BoolGUIParameter(self,"defect_correct_mode","Defect correction",default=True),"advanced",row=-1)
 
 class ImagEMSettings_GUI(Settings_GUI):
     def setup_settings_tables(self):
         super().setup_settings_tables()
-        self.add_parameter(cam_gui_parameters.IntGUIParameter(self,"sensitivity","EMCCD sensitivity",(0,255)),"advanced",row=-2)
+        self.add_parameter(cam_gui_parameters.IntGUIParameter(self,"sensitivity","EMCCD sensitivity",(0,255)),"advanced",row=-1)
 
 
 

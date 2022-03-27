@@ -130,6 +130,8 @@ class IntGUIParameter(SingleGUIParameter):
         self.limit=limit
     def add(self, base, row=None):
         if row is not None:
+            if row<0:
+                row%=base.get_layout_shape()[0]
             base.insert_row(row)
         if self.indicator:
             base.add_num_label(self.gui_name,value=self.default,label=self.label,formatter="int",location=row)
@@ -166,6 +168,8 @@ class FloatGUIParameter(SingleGUIParameter):
         self.fmt=fmt
     def add(self, base, row=None):
         if row is not None:
+            if row<0:
+                row%=base.get_layout_shape()[0]
             base.insert_row(row)
         if self.indicator:
             base.add_num_label(self.gui_name,value=self.default,label=self.label,formatter=self.fmt,location=row)
@@ -216,6 +220,8 @@ class EnumGUIParameter(SingleGUIParameter):
             raise ValueError(value)
     def add(self, base, row=None):
         if row is not None:
+            if row<0:
+                row%=base.get_layout_shape()[0]
             base.insert_row(row)
         if self.indicator:
             base.add_text_label(self.gui_name,self.label,value=self._get_label(self.default))
@@ -255,6 +261,8 @@ class BoolGUIParameter(SingleGUIParameter):
         return "On" if value else "Off"
     def add(self, base, row=None):
         if row is not None:
+            if row<0:
+                row%=base.get_layout_shape()[0]
             base.insert_row(row)
         if self.indicator:
             base.add_text_label(self.gui_name,self.label,value=self._get_label(self.default))
@@ -392,8 +400,6 @@ class AttributesBrowserGUIParameter(IGUIParameter):
         self.base=base
         self.window=self.browser_class(self.base)
         self.window.setup(self.settings.cam_ctl)
-        # self.base.add_toggle_button("show_attributes_window","Show attributes",add_indicator=False).get_value_changed_signal().connect(lambda v: self._show_window(v))
-        # self.window.closed.connect(lambda: self.base.set_value("show_attributes_window",False))
         self.base.add_button("show_attributes_window","Show attributes",add_indicator=False).get_value_changed_signal().connect(lambda: self._show_window())
         self.base.add_child("attributes_window",self.window,location="skip",gui_values_path="attributes_window")
         self._connected=False
