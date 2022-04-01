@@ -115,7 +115,7 @@ class TutorialBox(param_table.ParamTable):
         stages={
             "intro":["overview","navigation","further_info"],
             "camera":["overview","acquisition","connection","parameters"],
-            "cam_status":["overview","name","connection","acquisition","frame_counters","buffer_status","fps","activity_indicator"],
+            "cam_status":["overview","name","connection","acquisition","acq_frames_counter","read_frames_counter","buffer_status","fps","activity_indicator"],
             "images":["overview","overview_image","overview_control","transflip","levels","normalize","histogram","color_scheme","lines","coord_system","linecuts","updating"],
             "saving":["overview","standard","saving","path","path_modifiers","format","batch_size","filesplit","pretrigger_buffer","save_settings","event_log",
                         "snapshot","snap","snapshot_path","snapshot_use_main_path","snapshot_source","snapshot_format"],
@@ -198,11 +198,15 @@ class TutorialBox(param_table.ParamTable):
                     "<i>Setting up..</i>&nbsp; or <i>Cleaning up...</i>&nbsp; if the acquisition setup takes some time.<br> "
                     "Note that if the camera is in the external trigger mode but no trigger is supplied, it can be in the acquiring state without generating any frames."),
                         ["acquisition"]),
-                "frame_counters": ("Frame counters",
-                    ("This is the <b>number of acquired and read out frames</b>. Ideally these number should be the same, "
-                    "and any discrepancy means that some frames were lost in transfer. You can consult "
+                "acq_frames_counter": ("Acquired frames counter",
+                    ("This is the <b>number of acquired frames</b>. It shows how many frames have been acquired by the camera since the last time the acquisition was started "
+                    "(either explicitly, or after changing some parameters)."),
+                        ["frames/acquired"]),
+                "read_frames_counter": ("Read frames counter",
+                    ("This shows the <b>number of read out and dropped frames</b>. Ideally the number of read out frames is equal to the number of acquired frames, "
+                    "so the number of dropped frames (which is the difference between the two) is zero. If you consistently experience issues with dropped frames, you can consult "
                     "<a href='https://pylablib-cam-control.readthedocs.io/en/latest/troubleshooting.html'>troubleshooting</a> for details."),
-                        ["frames/acquired","frames/read"]),
+                        ["frames/readstat"]),
                 "buffer_status": ("Buffer status",
                     ("This is the <b>buffer status</b> showing the fill level of the camera frame buffer. If the buffer is almost completely full or the fill level is steadily increasing, "
                     "it means that the software can not deal with the frame or data rate, and you need to reduce it (decrease frame rate or frame size) "

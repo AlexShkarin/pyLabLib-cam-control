@@ -197,7 +197,7 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
         self.add_status_line("acquisition",label="Acquisition:",srcs=self.cam_ctl.cam_thread,tags="status/acquisition_text")
         self.update_status_line("acquisition")
         self.add_num_label("frames/acquired",formatter="int",label="Frames acquired:")
-        self.add_num_label("frames/read",formatter="int",label="Frames read:")
+        self.add_text_label("frames/readstat",label="Read / dropped:")
         self.add_text_label("frames/buffstat",label="Buffer fill status:")
         self.add_num_label("frames/fps",formatter=".2f",label="FPS:")
         self.setup_status_table()
@@ -207,9 +207,10 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
     # Update the interface indicators according to camera parameters
     def show_parameters(self, params):
         """Update camera status lines"""
-        for p in ["frames/read","frames/acquired","frames/fps"]:
+        for p in ["frames/acquired","frames/fps"]:
             if p in params:
                 self.v[p]=params[p]
+        self.v["frames/readstat"]="{:d} / {:d}".format(params["frames/read"],params["frames/acquired"]-params["frames/read"])
         if "frames/buffer_filled" in params and "buffer_size" in params:
             self.v["frames/buffstat"]="{:d} / {:d}".format(params["frames/buffer_filled"],params["buffer_size"])
         else:
