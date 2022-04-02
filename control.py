@@ -177,7 +177,7 @@ class StandaloneFrame(container.QWidgetContainer):
         proc_tab.add_padding()
         self.set_column_stretch(0,1)
         self.cam_ctl.set_all_values({"img/normalize":True})
-        self.activity_indicator=self.add_child("activity_indicator",ActivityIndicator_ctl.ActivityIndicator_GUI(self))
+        self.activity_indicator=self.add_child("activity_indicator",ActivityIndicator_ctl.ActivityIndicator_GUI(self),gui_values_path="activity_indicator")
         self.activity_indicator.setup(resource_manager_thread=resource_manager_thread)
         # add virtual GUI values
         self.add_property_element("defaults/window/size",

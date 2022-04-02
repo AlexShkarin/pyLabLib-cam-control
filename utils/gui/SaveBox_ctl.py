@@ -336,7 +336,7 @@ class SaveStatus_GUI(param_table.StatusTable):
         if missed_frames is not None:
             self.w["frames/missed"].setStyleSheet("color: red; font-weight: bold" if missed_frames else "")
         if "frames/queue_ram" in params:
-            self.v["frames/ram_status"]="{:.0f} / {:.0f} MB".format(params["frames/queue_ram"]/2**20,params["frames/max_queue_ram"]/2**20)
+            self.v["frames/ram_status"]="{:.0f} / {:.0f} Mb".format(params["frames/queue_ram"]/2**20,params["frames/max_queue_ram"]/2**20)
         if "frames/pretrigger_status" in params and params["frames/pretrigger_status"] is not None:
             stats=params["frames/pretrigger_status"]
             self.v["frames/pretrigger_frames"]="{} / {}".format(stats.frames,stats.size)
@@ -344,14 +344,14 @@ class SaveStatus_GUI(param_table.StatusTable):
             self.w["frames/pretrigger_skipped"].setStyleSheet("color: red; font-weight: bold" if stats.skipped else "")
             if stats.frames>0:
                 est_tot_size=(stats.size/stats.frames)*stats.nbytes
-                self.v["frames/pretrigger_ram"]="{:.0f} / {:.0f} MB".format(stats.nbytes/2**20,est_tot_size/2**20)
+                self.v["frames/pretrigger_ram"]="{:.0f} / {:.0f} Mb".format(stats.nbytes/2**20,est_tot_size/2**20)
             else:
-                self.v["frames/pretrigger_ram"]="0 / 0 MB"
+                self.v["frames/pretrigger_ram"]="0 / 0 Mb"
         else:
             self.v["frames/pretrigger_frames"]="0 / 0"
             self.v["frames/pretrigger_skipped"]="0"
             self.w["frames/pretrigger_skipped"].setStyleSheet("")
-            self.v["frames/pretrigger_ram"]="0 / 0 MB"
+            self.v["frames/pretrigger_ram"]="0 / 0 Mb"
         if self.cam_ctl.save_thread:
             if self.v["saving"]=="Finishing saving":
                 self._finishing_saving_time.trigger(restart=False)
