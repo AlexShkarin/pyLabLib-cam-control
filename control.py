@@ -47,6 +47,7 @@ from utils.gui import camera_control, SaveBox_ctl, ProcessingIndicator_ctl, Acti
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
 from utils.gui import tutorial, color_theme, settings_editor, about, error_message
 from utils import services
+from utils.services import dev as dev_services
 from utils.cameras import camera_descriptors
 import plugins
 import splash
@@ -69,6 +70,7 @@ sys.stdout=StreamLogger("logout.txt",sys.stdout)
 from utils import version, compare_version
 _defaults_filename="defaults.cfg"
 _locals_filename="locals.cfg"
+_dev_utils_enabled=False
 
 cam_thread="camera"
 process_thread="frame_process"
@@ -244,6 +246,11 @@ class StandaloneFrame(container.QWidgetContainer):
     def closeEvent(self, event):
         self.closed.emit()
         return super().closeEvent(event)
+    if _dev_utils_enabled:
+        @controller.exsafe
+        def keyPressEvent(self, event):
+            dev_services.on_key_press(self,event)
+            return super().keyPressEvent(event)
             
     @controller.exsafeSlot()
     def on_load_settings_button(self):
