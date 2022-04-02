@@ -75,13 +75,13 @@ You can find more information either on the :ref:`interface page <interface>`, o
 
 .. image:: overview_compact.png
 
-In case the interface takes too much space and does not fit in the screen, you can enable the compact mode in the :ref:`settings file <settings_file_general>`.
+In case the interface takes too much space and does not fit in the screen, you can enable the compact mode in the :ref:`preferences <interface_preferences>`.
 
-The software uses a dark color theme by default. You can change it in the :ref:`settings file <settings_file_general>`.
+The software uses a dark color theme by default. You can change it in the :ref:`preferences <interface_preferences>`.
 
 .. _overview_feedback:
 
 Support and feedback
 -------------------------
 
-If you have any issues, suggestions, or feedback, you can either raise an issue on GitHub at https://github.com/AlexShkarin/pylablib-cam-control/issues, or send an e-mail to pylablib@gmail.com.
+If you have any issues, suggestions, or feedback, you can either raise an issue on GitHub at https://github.com/SandoghdarLab/pyLabLib-cam-control/issues, or send an e-mail to pylablib@gmail.com.

@@ -11,7 +11,7 @@ Tutorial
 
 .. image:: interface_tutorial.png
 
-The first time you start the software, you are greeted with the tutorial. It walks you through the interface and the basic concepts. It is recommended that you take it at some point to get familiar with all of the software capabilities. If you want to revisit it, you can find it under the :ref:`Extra button <interface_footer>`.
+The first time you start the software, you are greeted with the tutorial. It walks you through the interface and the basic concepts. It is recommended that you take it at some point to get familiar with all of the software capabilities. If you want to revisit it, you can find it under the :ref:`Extra button <interface_extras>`.
 
 .. _interface_camera_settings:
 
@@ -24,15 +24,17 @@ The ``Camera`` tab controls and displays the camera parameters. To reduce the sc
 
 The settings are applied directly after changing the control. Sometimes (e.g., when using IMAQ frame grabbers at very high frame rates) applying settings might take several seconds, which makes this default behavior annoying. In this cases, one can uncheck ``Apply automatically`` checkbox, so the setting will apply only on pressing ``Apply`` button.
 
-Most parameters have an indicator next to the control, which shows the current parameter state. The state might be different from the entered control value, either when the parameter has not been applied, or if the entered value is out of range, and has to be coerced to the nearest valid value. For example while entering exposure value of 0 is allowed, it is never set exactly to zero, but rather to the lowest possible values given all other parameters.
+Most parameters have an indicator next to the control, which shows the current parameter state. The state might be different from the entered control value, either when the parameter has not been applied, or if the entered value is out of range, and has to be coerced to the nearest valid value. For example while entering exposure value of 0 is allowed, it is never set exactly to zero, but rather to the lowest possible value given all other parameters.
 
 The settings and their exact behavior vary a bit between different cameras. Below are the most common:
 
 - ``Exposure``: exposure time (in ms)
 - ``Frame period``: frame period (in ms). Ultimately determines the camera frame rate (as shown in the status table)
-- ``ROI``: region of interest and binning of the camera. ``X`` coordinate is horizontal from the left, ``Y`` coordinate is vertical from the top. For example, to get the bottom half of the 512x512 sensor, one needs to enter ``Xmin=0, Xmax=512, Ymin=256, Ymax=512``. The coordinates are given in raw camera pixels, i.e., full ROI for 2048x2048 sensor with 4x binning corresponds to ``Xmax=Ymax=2048``. Depending on the camera, binning can be independent for two axes, the same for two axes, applied to only one axis, or completely disabled. Hence, one or both of the ``Bin`` controls can be disabled.
+- ``ROI``: region of interest and binning of the camera. ``X`` coordinate is horizontal from the left, ``Y`` coordinate is vertical from the top. For example, to get the bottom half of the 512x512 sensor, one needs to enter ``Xmin=0, Xmax=512, Ymin=256, Ymax=512``. The coordinates are given in raw (un-binned) camera pixels, i.e., full ROI for 2048x2048 sensor with 4x binning corresponds to ``Xmax=Ymax=2048``. Depending on the camera, binning can be independent for two axes, the same for two axes, applied to only one axis, or completely disabled. Hence, one or both of the ``Bin`` controls can be disabled.
+
+  ``Select in image`` button below tje ROI controls on the left lets you select the ROI in the image display by dragging the mouse to select a rectangular region. Note that it only works in ``Standard`` display and not, e.g., in ``Filter`` display. ``Maximize`` button sets the ROI to the full frame, while preserving the binning.
   
-  The two checkboxes, ``Show selected ROI`` and ``Show full frame``, control two rectangles in the main image view, which show, correspondingly, the currently entered (but not applied) ROI and the whole camera sensor.
+  The two checkboxes, ``Show selected ROI`` and ``Show full frame``, display two rectangles in the main image view which show, correspondingly, the currently entered (but not applied) ROI and the whole camera sensor. ``Show full frame`` in combination with ``Select by image`` makes it especially convenient to select ROI relative to the full camera frame.
 
   In the bottom of ROI controls are two indicators. The first, ``ROI``, shows the actually applied ROI parameters in raw (i.e., un-binned) camera pixels. These can be different from the specified, as cameras often have restrictions on the minimal and maximal size, or the ROI position. The second indicator, ``Image size``, shows the resulting image size, taking binning into account.
 
@@ -53,11 +55,11 @@ Camera status
 The top half of the status table deals with the camera status:
 
 - ``Name``: camera name, as defined in the settings file
-- ``Kind``: camera kind; usually, the camera interface kind, e.g., ``Andor iXON`` or ``Thorlabs uc480 / IDS uEye``
+- ``Kind``: camera kind; usually, the camera interface kind, e.g., ``Andor iXON`` or ``Thorlabs uc480``
 - ``Connection``: shows whether camera is connected or not. Normally the camera should always be connected. It is only disconnected if it has been disconnected manually (by pressing ``Disconnect`` button on the camera control), or if the software couldn't connect to the camera on the startup. The latter usually means that the camera is turned off, disconnected, or used by a different program
 - ``Acquisition``: acquisition status
 - ``Frames acquired``: number of frames acquired by the camera in the current acquisition session, i.e., since the last press of the ``Start Acquisition`` button or the last change of parameters
-- ``Frames read``: number of frames which have been successfully read from the camera
+- ``Read / dropped``: number of frames which have been successfully read from the camera and, correspondingly, lost in transmission. Ideally the dropped frames counter is always zero, which means that the number of read and acquired frames is the same.
 - ``Buffer fill status``: status of the camera frame buffer; shows number of unread frames in the buffer and the total number of frames in the buffer
 - ``FPS``: calculated camera frame generation rate
 	
@@ -81,19 +83,22 @@ The image control is based on `pyqtgraph <http://www.pyqtgraph.org/>`_ ``ImageVi
 - ``Image size``: displays image size in pixels
 - ``Flip X``, ``Flip Y``, ``Transpose``: correspondingly, flips the image along the given axis, or transposes it (flips along the diagonal); note that these settings only affect display, and do not change the way images are saved
 - ``Normalize``: controls whether the image levels are automatically normalized to cover the full image range, or if they stay fixed
-- ``Minimal intensity``, ``Maximal intensity``: minimal and maximal intensity levels, if ``Normalize`` is off
+- ``Min``, ``Max``: minimal and maximal intensity levels, if ``Normalize`` is off
 - ``Save preset``, ``Load preset``: it is possible to store a single "preset" combination of intensity levels and recall them later; can be used to, e.g., temporarily switch to the ``Normalize`` mode to assess the whole image, but then quickly switch back to the previously used levels
-- ``Show histogram``: controls whether the image value histogram on the right is shown; turning it off gives more space to the image and somewhat improves the performance
+- ``Show histogram``: controls whether the image value histogram on the right is shown; turning it off gives more space to the image and somewhat improves the update rate
 - ``Auto histogram range``: controls whether the histogram plot is rescaled with every new frame; this is different from the ``Normalize`` option, which control whether the image level range (shown with a transparent box in the histogram) gets similarly rescaled
 - ``Show lines``: controls whether the green cross is shown in the plot; it can be used to mark or extract positions of features in the image
-- ``X``, ``Y``: enable or disable individual lines and control their positions; note that the coordinates are always given in the displayed image coordinate system, i.e., after flips and transpose are applied
+- ``Use <name> coordinates``: controls the coordinate system used for the lines. By default the included systems are ``Display`` (display image coordinates after applying flipping and rotations), ``Image`` (image coordinates, before flipping and rotations), and ``Frame`` (camera frame coordinates, which account for ROI and binning settings; only available in the ``Standard`` image display).
+- ``X``, ``Y``: enable or disable individual lines and control their positions in the specified coordinate system. The lines can also be moved in the plot, or centered to a given position with a double-click.
 - ``Center lines``: move the cross to the center of the images
 - ``Show line cuts``: when activated, shows a small additional plot with line cuts along the displayed lines
 - ``Line cut width``: if more than 1, it specifies a band thickness to average for a single line cut; this might reduce noisiness of the cuts
 - ``Updating``: controls whether the image view updates on the new frames, or simply shows the last frame; can be used to improve performance, or to closer inspect a single image
 - ``Single``: when pressed, grabs a single image and stops updating
+- ``Display update period``: maximal image update period. Can be increased if the software is to laggy, e.g., if large frames or large data rates are used.
+- ``Display FPS``: actual display update frame rate.
 
-The colored gradient bar shows the current color scheme and allows to change it. It can be done either by right-clicking on it and selecting one of the presets, or manually adding, dragging, and changing color of the markers.
+The colored gradient bar in the intensity histogram shows the current color scheme and allows to change it. It can be done either by right-clicking on it and selecting one of the presets, or manually adding, dragging, and changing color of the markers.
 
 
 .. _interface_save_control:
@@ -107,16 +112,17 @@ Here the :ref:`saving <pipeline_saving>` parameters, such as path, format, and n
 
 - ``Path``: path for saving the frames. If the containing folder does not exist, it is created automatically; if the extension is not specified, it is added automatically. Note that if ``Add date/time`` is activated, the actual path will be somewhat different.
 - ``Separate folder``: if activated, then the supplied path is treated as a folder, and all of the data is stored inside under standard names (``frames.bin`` or ``frames.tiff`` for main frames data, ``settings.dat`` for settings, etc.) This option allows for better data organizing when each dataset has multiple files (e.g., main data, settings, frame info, background, several split files).
-- ``Add date/time``: if activated, create a unique name by appending current date and time to the specified path. By default, the date and time are added as a suffix, but this behavior can be changed in the :ref:`settings file <settings_file_general>`.
+- ``Add date/time``: if activated, create a unique name by appending current date and time to the specified path. By default, the date and time are added as a suffix, but this behavior can be changed in the :ref:`preferences <interface_preferences>`.
 - ``On duplicate name``: determines what happens if the files with the specified name already exists; can be ``Rename`` (add a numeric suffix to make a new unique name), ``Overwrite`` (overwrite the existing data), or ``Append`` (append the existing data)
-- ``Format``: saving format; so far, only raw binary and Tiff are supported
+- ``Format``: saving format; so far, only raw binary, tiff, and big tiff (BTF) are supported
 - ``Frames limit``: if activated, only save the given number of frames; otherwise, keep streaming data until saving is manually stopped
 - ``Filesplit``: if activated, saved frames are split into separate files of the specified size instead of forming a single large file; this is useful when continuously acquiring very large amounts of data to avoid creating huge files
 - ``Pretrigger``: set up the :ref:`pretrigger <pipeline_saving_pretrigger>` buffer size
 - ``Clear pretrigger``: clear the accumulated pretrigger buffer
 - ``Save settings``: if checked, then in addition to the frame saves a text file containing all of the related information: camera settings, GUI state, frame counters, frame shape and data format, etc. Highly recommended to use.
+- ``Disk streaming``: selects the way of data streaming to the disk. ``Continuous`` is as described in the :ref:`saving buffer <pipeline_saving_buffer>` explanation, with frames being constantly streamed to the disk as quickly as possible while the overhead is stored in the buffer. Alternatively, ``Single-shot`` mode does not write data during acquisition, but only starts streaming to the disk after the necessary number of frames has been accumulated (or the saving has been stopped manually). Unlike the ``Continuous`` mode, it can not work indefinitely, since its stores in RAM all the data to be saved. However, for very high-performance cameras working at >1Gb/s (e.g., Photometrix Kinetix) this mode is more reliable and has lower chances of dropping frames during acquisition.
 - ``Saving``: the main button which initiates and stops data streaming; while streaming, changing of any other saving parameters is not allowed
-- ``Event log``: it is possible to create an additional "Event log" corresponding to the data file, in which various events during the data acquisition are recorded. To record a new event, enter it into the edit box and press ``Log event`` button. The event is tagged by the global OS timestamp, time since the recording start, and the frame number. The event file is automatically created when the first message is added.
+- ``Record events...``: opens a small window which lets one record various events during data acquisition. The events are tagged by the global OS timestamp, time since the recording start, and the frame number. The event file is automatically created when the first message is added.
 - ``Snapshot``: :ref:`snapshot <pipeline_saving_snapshot>` saving parameters
 - ``Use main path``: if checked, snapshot image path will be the same as the main image path, just with ``_snapshot`` appended to the end; all of the modifying parameters (``Separate folder`` and ``Add date/time``) are also the same
 - ``Path``, ``Separate folder``, ``Add date/time``: same meaning as above, but applied to the snapshot saving; only active if ``Use main path`` is not checked.
@@ -138,7 +144,7 @@ The bottom half of the status table deals with the saving status:
 - ``Frames saved``: number of frames stored to the drive
 - ``Frames missed``: number of frames which were missed in saving; this includes both frames that were received but not saved (e.g., due to save buffer overfill) and frames missed on camera readout
 - ``Status line``: some cameras provide a status line within their frames (currently only PhotonFocus is supported). This status line allows one to do the last-minute check of the frames consistency, whose results are shown here.
-- ``Saving buffer``: fill status of the :ref:`save buffer <pipeline_saving_buffer>`
+- ``Saving buffer``: fill status of the :ref:`save buffer <pipeline_saving_buffer>` and its maximal size in Mb. This maximal size can be changed in :ref:`preferences <interface_preferences>`.
 - ``Pretrigger frames``: fill status of the :ref:`pre-trigger buffer <pipeline_saving_pretrigger>`
 - ``Pretrigger RAM``: same as ``Pretrigger frames``, but expressed in memory size; useful to keep an eye on it in case the requested pre-trigger buffer size gets too large
 - ``Pretrigger skipped``: number of skipped frames in the pre-trigger buffer, which arose during the camera readout
@@ -161,7 +167,7 @@ Settings saving and extras
 
 .. image:: interface_footer.png
 
-The small box under the status allows to save the application settings to a file and subsequently load them. This lets you quickly switch between several working modes. ``Loading scope`` selects the loaded settings scope: only camera settings, everything except for the camera, or all settings.
+The small box in the lower right corner allows to save the application settings to a file and subsequently load them. This lets you quickly switch between several working modes. ``Loading scope`` selects the loaded settings scope: only camera settings, everything except for the camera, or all settings.
 
 If you want to only load some of the settings, you can manually edit saved settings files. It is a human-readable table, and the parameter names are relatively straightforward to decipher. Note that you can also load settings from the ``*_settings.dat`` file accompanying the saved data, as long as it was obtained using the same version of the software. This may be useful to make sure that you save the data with exactly the same parameters as before.
 
@@ -173,7 +179,7 @@ Extras
 
 .. image:: interface_extras.png
 
-The ``Extra...`` button contains additional rarely used features:
+The ``Extra...`` button in the :ref:`footer <interface_footer>` contains additional infrequently used features:
 
 - ``Tutorial``: interface and operation :ref:`tutorial <interface_tutorial>`, which automatically shows up during the first run of the software
 - ``Create camera shortcut``: if there are multiple cameras, this button allows to create a shortcut which connects to a particular camera. This skips the camera selection window on the application start and immediately runs the specific camera.
@@ -188,7 +194,7 @@ Settings and preferences
 
 .. image:: interface_preferences.png
 
-Here you can edit the general software settings. These cover all the same items as the :ref:`settings file <settings_file>`, but provides a user-friendly interface for editing these settings. This windows has several tabs. The first tab controls general settings, which affect all cameras by default. The other tabs (one per cameras) allow you override these settings for specific cameras (e.g., choose different color schemes for different cameras), as well as control some camera-specific settings. Here are the generic settings:
+The preferences window can be opened using the :ref:`Extras <interface_extras>` button. Here you can edit the general software settings. These cover all the same items as the :ref:`settings file <settings_file>`, but provides a user-friendly interface for editing these settings. This windows has several tabs. The first tab controls general settings, which affect all cameras by default. The other tabs (one per cameras) allow you override these settings for specific cameras (e.g., choose different color schemes for different cameras), as well as control some camera-specific settings. Here are the generic settings:
 
 - ``Compact interface``: switche between the standard four-panel and the more compact three-panel layouts.
 - ``Color theme``: select different interface and color therems (based of `qdarkstyle <https://github.com/ColinDuquesnoy/QDarkStyleSheet>`__).
@@ -205,6 +211,7 @@ In addition, there are several camera-specific parameters:
 - ``Camera name``: the name associated with the camera, which is displayed in the window title, camera status, or in the dropdown menu during camera selection. By default, autogenerated based on the camera model and serial number.
 - ``Frame buffer (frames)``: minimal camera frame buffer size defined in terms of number of frames.
 - ``Frame buffer (s)``: minimal camera frame buffer size defined in terms of acquisition time (in seconds). For example, the size of 1 second would be result in 100 frame for 100 FPS frame rate and 1000 frames for 1 kFPS frame rate.
+- ``Poll period (s)``: the period at which camera is polled for new frames. Lower period increases the image update frame rate, but might decrease the overall performance.
 
 
 .. _interface_processing:
