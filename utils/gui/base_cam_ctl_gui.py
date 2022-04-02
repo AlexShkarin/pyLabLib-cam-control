@@ -1,5 +1,6 @@
 from pylablib.core.thread import controller
 from pylablib.core.gui.widgets import container, param_table
+from pylablib.core.gui import QtGui
 
 from .cam_gui_parameters import FloatGUIParameter, BoolGUIParameter, EnumGUIParameter, ROIGUIParameter
 
@@ -44,7 +45,9 @@ class ICameraSettings_GUI(container.QWidgetContainer):
         self.settings_params.add_check_box("auto_apply",caption="Apply automatically",value=True)
         self.settings_params.add_button("apply","Apply")
         self.settings_params.add_button("start","Start acquisition",location=("next",0,1,1))
+        self.settings_params.w["start"].setIcon(QtGui.QIcon(QtGui.QPixmap("resources/play.png")))
         self.settings_params.add_button("stop","Stop acquisition",location=(-1,1,1,1))
+        self.settings_params.w["stop"].setIcon(QtGui.QIcon(QtGui.QPixmap("resources/stop.png")))
         self.settings_params.add_button("connect","Connect",location=("next",0,1,1))
         self.settings_params.add_button("disconnect","Disconnect",location=(-1,1,1,1))
         self.settings_params.vs["apply"].connect(self.cam_ctl.send_parameters)

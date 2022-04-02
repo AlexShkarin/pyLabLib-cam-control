@@ -130,6 +130,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.add_combo_box("stream_mode",label="Disk streaming",options={"cont":"Continuous","single_shot":"Single-shot"},location=("next",0,1,3))
         self.params.vs["stream_mode"].connect(self.cam_ctl.setup_stream_mode)
         self.params.add_toggle_button("saving","Saving",location=("next",0,1,3))
+        self.params.w["saving"].setIcon(QtGui.QIcon(QtGui.QPixmap("resources/rec.png")))
         self.params.vs["saving"].connect(lambda v: self.cam_ctl.toggle_saving(mode="full",start=v))
         self.message_log_window=MessageLogWindow(self)
         self.message_log_window.setup(self.cam_ctl)

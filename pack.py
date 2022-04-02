@@ -47,10 +47,11 @@ pll_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__")
 def copy_pll(dst):
     file_utils.retry_copy_dir(pll_folder,os.path.join(dst,"cam-control","pylablib"),folder_filter=pll_copy_folder_filter,file_filter=pll_copy_file_filter)
 include_plugins=["filter","server","trigger_save"]
-control_copy_file_filter=string_utils.StringFilter(include=r".*\.py|LICENSE|requirements.txt|splash.png|icon.ico$",exclude=r"pack\.py$")
+control_copy_file_filter=string_utils.StringFilter(include=r".*\.py|.*\.png|LICENSE|requirements.txt|icon.ico$",exclude=r"pack\.py$")
 control_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__|\.git|\.vscode|docs|launcher")
 def copy_control(dst):
     dst_control=os.path.join(dst,"cam-control")
+    file_utils.retry_copy_dir(control_folder,dst_control,folder_filter=control_copy_folder_filter,file_filter=control_copy_file_filter)
     file_utils.retry_copy_dir(control_folder,dst_control,folder_filter=control_copy_folder_filter,file_filter=control_copy_file_filter)
     file_utils.retry_copy(os.path.join(control_folder,"settings_deploy.cfg"),os.path.join(dst_control,"settings.cfg"))
     if version:

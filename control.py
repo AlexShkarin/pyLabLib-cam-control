@@ -210,6 +210,9 @@ class StandaloneFrame(container.QWidgetContainer):
         self.ctl.finished.connect(self.stop)
         self.ctl.add_thread_method("get_all_values",self.get_all_values)
         self.ctl.add_thread_method("set_all_values",self.set_all_values)
+        def toggle_tab(tabs, name):
+            self.c[tabs].set_by_name(name)
+        self.ctl.add_thread_method("toggle_tab",toggle_tab)
         # Load plugins
         self.load_config_plugins()
 

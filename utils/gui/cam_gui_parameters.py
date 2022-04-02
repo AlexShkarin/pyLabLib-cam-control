@@ -307,6 +307,7 @@ class ROIGUIParameter(IGUIParameter):
             def _select_roi(v):
                 if "plotter_area" in self.settings.cam_ctl.c:
                     self.settings.cam_ctl.c["plotter_area"].enable_selection_frame(v,image_bound=False)
+                    self._switch_to_standard_tab(v)
             base.add_toggle_button("select_roi","Select in image",add_indicator=False,location=("next",2,1,1)).get_value_changed_signal().connect(_select_roi)
             base.add_padding()
             @controller.exsafe
@@ -324,6 +325,8 @@ class ROIGUIParameter(IGUIParameter):
             base.get_sublayout().setColumnStretch(1,1)
         for n in ["roi","show_gui_roi","show_det_size"]:
             base.vs[n].connect(lambda v: self.on_changed())
+        for n in ["show_gui_roi","show_det_size"]:
+            base.vs[n].connect(self._switch_to_standard_tab)
         base.vs["roi"].connect(controller.exsafe(self._update_value))
         if "plotter_area" in self.settings.cam_ctl.c:
             self.settings.cam_ctl.c["plotter_area"].frame_selected.connect(self.on_roi_select)
@@ -348,6 +351,10 @@ class ROIGUIParameter(IGUIParameter):
             full_roi_center=np.array(det_size)/2
             cam_ctl.plot_control("rectangles/set",("full_roi",full_roi_center,full_roi_size))
             cam_ctl.plot_control("rectangles/"+("show" if self.settings.v["show_det_size"] else "hide"),("full_roi",))
+    @controller.exsafe
+    def _switch_to_standard_tab(self, show=True):
+        if show:
+            self.settings.cam_ctl.ctl.call_thread_method("toggle_tab","plot_tabs","standard_frame")
 
     def setup(self, parameters, full_info):
         if not all(p in parameters for p in ["roi","roi_limits"]):
