@@ -39,6 +39,16 @@ class Settings_GUI(GenericCameraSettings_GUI):
         super().setup_settings_tables()
         self.add_parameter(FastScanBoolGUIParameter(self),"advanced")
 
+class Status_GUI(GenericCameraStatus_GUI):
+    def setup_status_table(self):
+        self.add_text_label("buffer_overruns:",label="Buffer overruns")
+    # Update the interface indicators according to camera parameters
+    def show_parameters(self, params):
+        super().show_parameters(params)
+        if "internal_buffer_status" in params:
+            buffer_overruns=params["internal_buffer_status"].overruns
+            self.v["buffer_overruns"]=str(buffer_overruns) if buffer_overruns is not None else "N/A"
+            self.w["buffer_overruns"].setStyleSheet("font-weight: bold" if buffer_overruns else "")
 
 
 
@@ -83,4 +93,4 @@ class PCOCameraDescriptor(ICameraDescriptor):
     def make_gui_control(self, parent):
         return Settings_GUI(parent,cam_desc=self)
     def make_gui_status(self, parent):
-        return GenericCameraStatus_GUI(parent,cam_desc=self)
+        return Status_GUI(parent,cam_desc=self)

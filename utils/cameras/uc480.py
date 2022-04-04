@@ -41,6 +41,7 @@ class Status_GUI(GenericCameraStatus_GUI):
         super().show_parameters(params)
         if "acq_status" in params:
             self.v["frames_lost"]=params["acq_status"].transfer_missed
+            self.w["frames_lost"].setStyleSheet("font-weight: bold" if params["acq_status"].transfer_missed else "")
 
 
 

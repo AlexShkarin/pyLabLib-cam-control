@@ -49,8 +49,9 @@ class SettingsManager(controller.QTaskThread):
 
 
 class GarbageCollector(controller.QTaskThread):
-    def setup_task(self):
-        self.v["enabled"]=True
+    def setup_task(self, disabled=False):
+        self.disabled=disabled
+        self.v["enabled"]=not self.disabled
         self.add_job("garbage_collect",self.garbage_collect,2)
     def garbage_collect(self):
         if self.v["enabled"]:
@@ -59,7 +60,7 @@ class GarbageCollector(controller.QTaskThread):
         if period is not None:
             self.change_job_period("garbage_collect",period)
         if enabled is not None:
-            self.v["enabled"]=enabled
+            self.v["enabled"]=enabled and not self.disabled
 
 
 

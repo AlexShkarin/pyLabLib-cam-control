@@ -73,6 +73,10 @@ class ICameraDescriptor:
     def get_camera_labels(self):
         """Get label ``(kind_name, cam_name)``"""
         return self.get_kind_name(),self.settings.get("display_name",self.name)
+    @classmethod
+    def get_class_settings(cls):
+        """Get dictionary with generic class settings"""
+        return {"allow_garbage_collection":True}
 
     def make_thread(self, name):
         """Create camera thread with the given name"""

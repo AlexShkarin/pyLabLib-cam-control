@@ -52,6 +52,7 @@ class StatusZyla_GUI(GenericCameraStatus_GUI):
             self.v["temperature_monitor"]=params["temperature_monitor"]
         if "missed_frames" in params:
             self.v["buffer_overflows"]=params["missed_frames"].overflows
+            self.w["buffer_overflows"].setStyleSheet("font-weight: bold" if params["missed_frames"].overflows else "")
 
 
 

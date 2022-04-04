@@ -175,6 +175,7 @@ class PhotonFocusCameraStatus_GUI(GenericCameraStatus_GUI):
             bstat=params["buffer_status"]
             self.v["frames/buffstat"]="{:d} / {:d}".format(bstat.unread or 0,bstat.size or 0)
             self.v["frames_lost"]=bstat.lost
+            self.w["frames_lost"].setStyleSheet("font-weight: bold" if bstat.lost else "")
 
 
 

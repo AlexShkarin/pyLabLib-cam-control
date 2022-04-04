@@ -217,7 +217,9 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
         for p in ["frames/acquired","frames/fps"]:
             if p in params:
                 self.v[p]=params[p]
-        self.v["frames/readstat"]="{:d} / {:d}".format(params["frames/read"],params["frames/acquired"]-params["frames/read"])
+        dropped=params["frames/acquired"]-params["frames/read"]
+        sdropped="<b>{:d}</b>".format(dropped) if dropped else "0"
+        self.v["frames/readstat"]="{:d} / {}".format(params["frames/read"],sdropped)
         if "frames/buffer_filled" in params and "buffer_size" in params:
             self.v["frames/buffstat"]="{:d} / {:d}".format(params["frames/buffer_filled"],params["buffer_size"])
         else:
