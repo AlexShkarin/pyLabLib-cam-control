@@ -41,7 +41,7 @@ class Settings_GUI(GenericCameraSettings_GUI):
 
 class Status_GUI(GenericCameraStatus_GUI):
     def setup_status_table(self):
-        self.add_text_label("buffer_overruns:",label="Buffer overruns")
+        self.add_text_label("buffer_overruns",label="Buffer overruns:")
     # Update the interface indicators according to camera parameters
     def show_parameters(self, params):
         super().show_parameters(params)
@@ -86,6 +86,11 @@ class PCOCameraDescriptor(ICameraDescriptor):
     
     def get_kind_name(self):
         return "Generic PCO"
+    @classmethod
+    def get_class_settings(cls):
+        settings=super().get_class_settings()
+        settings["allow_garbage_collection"]=False
+        return settings
     
     def make_thread(self, name):
         return BasicPCOSC2CameraThread(name=name,kwargs=self.settings["params"].as_dict())

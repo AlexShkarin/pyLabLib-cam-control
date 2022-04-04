@@ -650,8 +650,9 @@ def load_config(path):
     settings["runtime/settings_src"]=os.path.abspath(path)
     return settings
 
-def start_threads(settings):
+def start_threads(settings, cam_desc):
     """Start and partially set up auxiliary threads"""
+    cam_class_settings=cam_desc.get_class_settings()
     services.FrameBinningThread(preprocess_thread,kwargs={"src":cam_thread,"tag_in":"frames/new"}).start()
     services.FrameSlowdownThread(slowdown_thread,kwargs={"src":preprocess_thread,"tag_in":"frames/new"}).start()
     services.FrameProcessorThread(process_thread,kwargs={"src":slowdown_thread,"tag_in":"frames/new"}).start()
@@ -661,7 +662,8 @@ def start_threads(settings):
     services.FrameSaveThread(snap_save_thread,kwargs={"src":"any","tag":"frames/new/snap","settings_mgr":settings_manager_thread}).start()
     services.SettingsManager(settings_manager_thread).start()
     services.ResourceManager(resource_manager_thread).start()
-    services.GarbageCollector(garbage_collector_thread).start()
+    allow_garbage_collection=cam_class_settings.get("allow_garbage_collection",True)
+    services.GarbageCollector(garbage_collector_thread,kwargs={"disabled":not allow_garbage_collection}).start()
     channel_accum=controller.sync_controller(channel_accumulator_thread)
     channel_accum.cs.add_source("raw",src=preprocess_thread,tag="frames/new",sync=True,kind="raw")
     channel_accum.cs.add_source("show",src=process_thread,tag="frames/new/show",sync=True,kind="show")
@@ -697,7 +699,6 @@ def start_app(ask_on_no_cam=True):
             settings["select_camera"]=c
             break
 
-    start_threads(settings)
     main_form=StandaloneFrame()
     @controller.exsafe
     def start_main_form():
@@ -711,6 +712,7 @@ def start_app(ask_on_no_cam=True):
 
         cam_desc_class=camera_descriptors[settings["cameras",cam_name,"kind"]]
         cam_desc=cam_desc_class(cam_name,settings=settings["cameras",cam_name])
+        start_threads(settings,cam_desc)
         cam_ctl=cam_desc.make_thread(cam_thread)
         cam_ctl.start()
         main_form.setup(settings=settings,cam_name=cam_name,cam_desc=cam_desc)
