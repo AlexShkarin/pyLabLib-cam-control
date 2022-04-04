@@ -5,7 +5,7 @@ from pylablib import widgets
 
 import collections
 
-TAttribute=collections.namedtuple("TAttribute",["kind","attribute","indicator","widgets"])
+TAttribute=collections.namedtuple("TAttribute",["kind","attribute","indicator","widgets","rng"])
 class CamAttributesBrowser(widgets.QWidgetContainer):
     def setup(self, cam_ctl):
         super().setup()
@@ -57,8 +57,6 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
             self.buttons.vs["close"].connect(self.close)
         self.add_property_element("window/size",
             lambda: (self.size().width(),self.size().height()), lambda v: self.resize(*v), add_indicator=False)
-        self.add_property_element("window/position",
-            lambda: (self.geometry().x(),self.geometry().y()), lambda v: self.setGeometry(v[0],v[1],self.size().width(),self.size().height()), add_indicator=False)
         self._attributes={}
         self._cam_setup_done=False
         self._activity_state="off"
@@ -171,8 +169,8 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
         self.decorate_parameter(name,label,indicator=indicator)
 
 
-    def _record_attribute(self, name, kind, attribute, indicator=False):
-        self._attributes[name]=TAttribute(kind,attribute,indicator,[])
+    def _record_attribute(self, name, kind, attribute, indicator=False, rng=None):
+        self._attributes[name]=TAttribute(kind,attribute,indicator,[],[rng])
     def _add_attribute(self, name, attribute, value):
         pass
     def setup_parameters(self, full_info):
@@ -190,6 +188,18 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
         self.hide()
         self.tabs.setCurrentIndex(0)
         self.setup_visibility()
+    def _get_attribute_range(self, attribute):
+        return None
+    def _update_parameter_range(self, name, attribute):
+        rng=self._get_attribute_range(attribute)  # pylint: disable=assignment-from-none
+        if name in self._attributes and rng is not None and self._attributes[name].rng[0]!=rng:
+            if self._attributes[name].kind=="float":
+                self.params_table.w["v",name].set_limiter(rng)
+            elif self._attributes[name].kind=="int":
+                self.params_table.w["v",name].set_limiter(rng+("coerce","int"))
+            elif self._attributes[name].kind=="enum":
+                self.params_table.w["v",name].set_options(rng)
+            self._attributes[name].rng[0]=rng
     
 
     def _show_attribute(self, name, show=True):
@@ -253,6 +263,9 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
                 if "errors/camera_attributes" in parameters:
                     for n,v in parameters["errors/camera_attributes"].items(leafs=True,path_kind="joined"):
                         self.set_error_indicator(n,v)
+                if "aux/camera_attributes_desc" in parameters:
+                    for n,v in parameters["aux/camera_attributes_desc"].items(leafs=True,path_kind="joined"):
+                        self._update_parameter_range(n,v)
 
     @exsafe
     def _set_camera_attributes(self, names):
@@ -273,7 +286,7 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
     
     def _setup_attributes_update(self, active):
         if self.cam_ctl.dev is not None:
-            self.cam_ctl.dev.ca.modify_updated_camera_attributes(mode=active)
+            self.cam_ctl.dev.cai.modify_updated_camera_attributes(mode=active)
             if active:
                 self.cam_ctl.dev.ca.update_parameters()
     @exsafe

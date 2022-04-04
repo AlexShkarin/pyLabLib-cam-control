@@ -102,13 +102,13 @@ class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
             return
         indicator=not attribute.writable
         if attribute.kind in {"INT8","INT16","INT32","INT64","UNS8","UNS16","UNS32","UNS64"}:
-            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self._record_attribute(name,"int",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
             self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
         elif attribute.kind in {"FLT32","FLT64"}:
-            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self._record_attribute(name,"float",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
             self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
         elif attribute.kind=="ENUM":
-            self._record_attribute(name,"enum",attribute,indicator=indicator)
+            self._record_attribute(name,"enum",attribute,indicator=indicator,rng=attribute.ilabels)
             self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
         elif attribute.kind=="CHAR_PTR":
             self._record_attribute(name,"str",attribute,indicator=indicator)
@@ -116,6 +116,11 @@ class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
         elif attribute.kind=="BOOLEAN":
             self._record_attribute(name,"bool",attribute,indicator=indicator)
             self.add_bool_parameter(name,attribute.name,indicator=indicator)
+    def _get_attribute_range(self, attribute):
+        if attribute.kind in {"INT8","INT16","INT32","INT64","UNS8","UNS16","UNS32","UNS64","FLT32","FLT64"}:
+            return (attribute.min,attribute.max)
+        if attribute.kind=="ENUM":
+            return attribute.ilabels
 
 class Settings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"

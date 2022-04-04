@@ -13,17 +13,22 @@ class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
     def _add_attribute(self, name, attribute, value):
         indicator=not attribute.writable
         if attribute.kind in {"Integer","Large Integer"}:
-            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self._record_attribute(name,"int",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
             self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),default=attribute.default,indicator=indicator)
         elif attribute.kind=="Floating Point":
-            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self._record_attribute(name,"float",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
             self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),default=attribute.default,indicator=indicator)
         elif attribute.kind=="Enumeration":
-            self._record_attribute(name,"enum",attribute,indicator=indicator)
+            self._record_attribute(name,"enum",attribute,indicator=indicator,rng=attribute.ilabels)
             self.add_choice_parameter(name,attribute.name,attribute.ilabels,default=attribute.default,indicator=indicator)
         elif attribute.kind=="Boolean":
             self._record_attribute(name,"bool",attribute,indicator=indicator)
             self.add_bool_parameter(name,attribute.name,default=attribute.default,indicator=indicator)
+    def _get_attribute_range(self, attribute):
+        if attribute.kind in ["Integer","Large Integer","Floating Point"]:
+            return (attribute.min,attribute.max)
+        if attribute.kind=="Enumeration":
+            return attribute.ilabels
 
 class Settings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"

@@ -25,14 +25,19 @@ class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
     def _add_attribute(self, name, attribute, value):
         indicator=not attribute.writable
         if attribute.kind=="int":
-            self._record_attribute(name,"int",attribute,indicator=indicator)
+            self._record_attribute(name,"int",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
             self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),default=attribute.default,indicator=indicator)
         elif attribute.kind=="float":
-            self._record_attribute(name,"float",attribute,indicator=indicator)
+            self._record_attribute(name,"float",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
             self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),default=attribute.default,indicator=indicator)
         elif attribute.kind=="enum":
-            self._record_attribute(name,"enum",attribute,indicator=indicator)
+            self._record_attribute(name,"enum",attribute,indicator=indicator,rng=attribute.ilabels)
             self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
+    def _get_attribute_range(self, attribute):
+        if attribute.kind in ["int","float"]:
+            return (attribute.min,attribute.max)
+        if attribute.kind=="enum":
+            return attribute.ilabels
 
 
 
