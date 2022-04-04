@@ -3,6 +3,23 @@
 Release history
 ============================
 
+`Version 2.1.2 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.2.0/cam-control.zip>`__
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+2022-04-04
+
+* Added Photometrics cameras.
+* Added camera attributes browser to Andor SDK3, Hamamatsu, Photometrics, Princeton Instruments, and IMAQdx cameras.
+* Added lines coordinate systems to the plotter, added ROI selection in the image.
+* Added a separate event logging window for a more convenient logging of larger messages.
+* Added single-shot data recording for high-performance saving.
+* Altered the save trigger behavior: now the new save can start only after the previous is done.
+* Minor bugfixes.
+
+`Download <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.2.0/cam-control.zip>`__
+
+|
+
 `Version 2.1.2 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.1.2/cam-control.zip>`__
 ---------------------------------------------------------------------------------------------------------------------------------------------
 

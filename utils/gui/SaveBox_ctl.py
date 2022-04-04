@@ -2,7 +2,7 @@ from pylablib.core.thread import controller
 from pylablib.core.gui.widgets import container, param_table
 from pylablib.core.utils import files as file_utils, general
 
-from pylablib.core.gui import QtWidgets, QtCore, QtGui, qtkwargs
+from pylablib.core.gui import QtWidgets, QtCore, QtGui, qtkwargs, utils as gui_utils
 
 import os
 import datetime
@@ -39,8 +39,6 @@ class MessageLogWindow(container.QWidgetContainer):
         self.setMinimumSize(500,300)
         self.add_property_element("window/size",
             lambda: (self.size().width(),self.size().height()), lambda v: self.resize(*v), add_indicator=False)
-        self.add_property_element("window/position",
-            lambda: (self.geometry().x(),self.geometry().y()), lambda v: self.setGeometry(v[0],v[1],self.size().width(),self.size().height()), add_indicator=False)
     def update(self):
         """Update recorded messages"""
         unfinished=[]
@@ -130,12 +128,17 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params.add_combo_box("stream_mode",label="Disk streaming",options={"cont":"Continuous","single_shot":"Single-shot"},location=("next",0,1,3))
         self.params.vs["stream_mode"].connect(self.cam_ctl.setup_stream_mode)
         self.params.add_toggle_button("saving","Saving",location=("next",0,1,3))
-        self.params.w["saving"].setIcon(QtGui.QIcon(QtGui.QPixmap("resources/rec.png")))
+        pic=QtGui.QPixmap(os.path.join(self.ctl.v["settings/runtime/root_folder"],"resources/rec.png"))
+        self.params.w["saving"].setIcon(QtGui.QIcon(pic))
         self.params.vs["saving"].connect(lambda v: self.cam_ctl.toggle_saving(mode="full",start=v))
         self.message_log_window=MessageLogWindow(self)
         self.message_log_window.setup(self.cam_ctl)
         self.params.add_button("show_log_window","Record events...",location=("next",0,1,2))
-        self.params.vs["show_log_window"].connect(self.message_log_window.show)
+        @controller.exsafe
+        def show_message_log():
+            self.message_log_window.move(gui_utils.get_top_parent(self).rect().center()-self.message_log_window.rect().center())
+            self.message_log_window.show()
+        self.params.vs["show_log_window"].connect(show_message_log)
         self.params.add_child("message_log_window",self.message_log_window,gui_values_path="message_log_window",location="skip")
         self.params.add_spacer(5)
         with self.params.using_new_sublayout("snap_header","hbox"):
