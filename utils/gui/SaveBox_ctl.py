@@ -278,7 +278,9 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         just_started=not self.record_in_progress and record_in_progress
         self.record_in_progress=record_in_progress
         if just_stopped: # record just stopped
-            if self.popup_on_missing_frames and not self.cam_ctl.no_popup:
+            if not self.cam_ctl.no_popup and params.get("status/error","none")!="none":
+                QtWidgets.QMessageBox.warning(self,"Saving issue","Saving experienced an issue: {}".format(params.get("status/error_text_full","Error")),QtWidgets.QMessageBox.Ok)
+            elif self.popup_on_missing_frames and not self.cam_ctl.no_popup:
                 if params.get("frames/missed",0)>0 or params.get("frames/status_line_check","na") not in {"na","off","none","ok"}:
                     QtWidgets.QMessageBox.warning(self,"Problems with frames","Some frames are missing, duplicated, or out of order",QtWidgets.QMessageBox.Ok)
             self.w["saving"].set_value(False,notify_value_change=False)
@@ -287,7 +289,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             self.w["saving"].set_value(True,notify_value_change=False)
             self.message_log_window.on_start_recording()
         self.message_log_window.update()
-        block_on_record=["path","browse","add_datetime","make_folder","on_name_conflict","format","limit_frames","do_filesplit","pretrigger_enabled","save_settings"]
+        block_on_record=["path","browse","add_datetime","make_folder","on_name_conflict","format","limit_frames","do_filesplit","pretrigger_enabled","save_settings","stream_mode"]
         self.params.set_enabled(block_on_record,not record_in_progress)
         self.params.set_enabled(["batch_size"],self.v["limit_frames"] and not record_in_progress)
         self.params.set_enabled(["filesplit"],self.v["do_filesplit"] and not record_in_progress)
@@ -321,6 +323,8 @@ class SaveStatus_GUI(param_table.StatusTable):
             self._finishing_saving_time=general.Countdown(0.5,start=False)
             self.add_status_line("saving",label="Saving:",srcs=self.cam_ctl.save_thread,tags="status/saving_text")
             self.update_status_line("saving")
+            self.add_status_line("issues",label="Issues:",srcs=self.cam_ctl.save_thread,tags="status/error_text")
+            self.update_status_line("issues")
         self.add_num_label("frames/received",formatter=("int"),label="Frames received:")
         self.add_num_label("frames/scheduled",formatter=("int"),label="Frames scheduled:")
         self.add_num_label("frames/saved",formatter=("int"),label="Frames saved:")
@@ -362,6 +366,7 @@ class SaveStatus_GUI(param_table.StatusTable):
             else:
                 self._finishing_saving_time.stop()
             self.w["saving"].setStyleSheet("background: gold; color: black" if self._finishing_saving_time.passed() else "")
+            self.w["issues"].setStyleSheet("color: red; font-weight: bold" if self.v["issues"]!="None" else "")
         if "frames/status_line_check" in params:
             slc=params["frames/status_line_check"]
             slc_ok=slc in {"off","na","none"}

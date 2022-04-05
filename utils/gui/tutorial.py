@@ -119,7 +119,7 @@ class TutorialBox(param_table.ParamTable):
             "images":["overview","overview_image","overview_control","transflip","levels","normalize","histogram","color_scheme","lines","coord_system","linecuts","updating"],
             "saving":["overview","standard","saving","path","path_modifiers","format","batch_size","filesplit","pretrigger_buffer","save_settings","event_log",
                         "snapshot","snap","snapshot_path","snapshot_use_main_path","snapshot_source","snapshot_format"],
-            "save_status":["overview","saving_process","saving_process_cont","stream_mode","received","saved","missed","status_line","saving_buffer","pretrigger"],
+            "save_status":["overview","saving_process","saving_process_cont","stream_mode","issues","received","saved","missed","status_line","saving_buffer","pretrigger"],
             "extras":["overview","tutorial","cam_shortcut","preferences","about"],
             "processing":["overview","indicator","preproc/overview","preproc/spatial","preproc/temporal","preproc/dtype","preproc/enable",
                         "bgsub/overview","bgsub/method","bgsub/method_snapshot","bgsub/method_running","bgsub/comb_mode","bgsub/grab","bgsub/save","bgsub/enable",
@@ -371,6 +371,9 @@ class TutorialBox(param_table.ParamTable):
                     "The single-shot mode first stores all the acquired data to the buffer and only after the acquisition is  done, the buffer is saved to the drive. "
                     "Since this mode can only be run for a finite time, it should only be used for extremely high data rates (>2Gb/s) to avoid saving-related lags during acquisition."),
                         ["stream_mode"]),
+                "saving_process": ("Saving issues",
+                    "In case any serious issues arise, they will be indicated here. ",
+                        ["issues"]),
                 "received": ("Received frames",
                     ("This is the <b>number of frames received and scheduled for saving</b>. These show how many frames have been received from the camera to be saved, "
                     "and how many of these are scheduled for saving. Ideally these two are the same, and they are only different if the frames are lost or if "
@@ -480,10 +483,10 @@ class TutorialBox(param_table.ParamTable):
                     "This method works better when the background is dynamic, but changes slower than the signal."),
                         ["method"]),
                 "bgsub/comb_mode": ("Background subtraction / Combination",
-                    ("Here you control <b>combination parameters</b>: number of frames to combine to get a background frame and the combination method. "
+                    ("Here you control <b>combination parameters</b>: number of frames to combine to get a background frame, step between these combined frames, and the combination method. "
                     "Typically one uses either <i>Median</i>&nbsp; or <i>Mean</i>; the first is more robust to outliers, but the second is much faster. "
                     "However, depending on the application, <i>Min</i>&nbsp; can be more appropriate."),
-                        ["comb_count","comb_mode"]),
+                        ["comb_count","comb_mode","comb_step"]),
                 "bgsub/grab": ("Background subtraction / Grabbing",
                     ("If you use <i>Snapshot</i>&nbsp; subtraction method, here you can <b>start grabbing the background</b>. As soon as this button is pressed, "
                     "the next <i>Frames count</i>&nbsp; frames are grabbed and combined to form the background."),

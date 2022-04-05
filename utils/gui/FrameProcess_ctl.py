@@ -22,6 +22,7 @@ class FrameProccess_GUI(container.QGroupBoxContainer):
         self.params.setup(add_indicator=False)
         self.params.add_combo_box("method",options=["Snapshot","Running"],index_values=["snapshot","running"],label="Method:")
         self.params.add_num_edit("comb_count",formatter="int",limiter=(1,None,"coerce","int"),value=1,label="Frames count:",add_indicator=True)
+        self.params.add_num_edit("comb_step",formatter="int",limiter=(1,None,"coerce","int"),value=1,label="Frames step:",add_indicator=True)
         self.params.add_combo_box("comb_mode",options=["Mean","Median","Min"],index_values=["mean","median","min"],label="Combination mode:")
         self.params.add_spacer(0)
         self.params.add_button("grab_background","Grab background",location=("next",0,1,1))
@@ -39,12 +40,12 @@ class FrameProccess_GUI(container.QGroupBoxContainer):
             method=self.v["method"]
             if method=="snapshot":
                 self.image_processor.csi.setup_snapshot_saving(self.v["background_saving"])
-                self.image_processor.csi.setup_snapshot_subtraction(self.v["comb_count"],self.v["comb_mode"])
+                self.image_processor.csi.setup_snapshot_subtraction(self.v["comb_count"],self.v["comb_mode"],self.v["comb_step"])
             else:
-                self.image_processor.csi.setup_running_subtraction(self.v["comb_count"],self.v["comb_mode"])
+                self.image_processor.csi.setup_running_subtraction(self.v["comb_count"],self.v["comb_mode"],self.v["comb_step"])
             self.image_processor.csi.setup_subtraction_method(method=method,enabled=enabled)
             self.recv_parameters()
-        for w in ["method","enabled","comb_count","comb_mode","background_saving"]:
+        for w in ["method","enabled","comb_count","comb_step","comb_mode","background_saving"]:
             self.params.vs[w].connect(setup_subtraction)
         self.params.vs["grab_background"].connect(lambda: self.image_processor.ca.grab_snapshot_background())
         # Timer
