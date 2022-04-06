@@ -200,9 +200,7 @@ class GenericCameraCtl(container.QContainer):
             params[s]=self.dev.v[s]
         if self.saver:
             params["status/saving"]=self.saver.get_variable("status/saving","stopped")
-            params["status/error"]=self.saver.get_variable("status/error","none")
-            params["status/error_text"]=self.saver.get_variable("status/error_text","None")
-            params["status/error_text_full"]=self.saver.get_variable("status/error_text_full",params["status/error_text"])
+            params["status/error"]=self.saver.get_variable("status/error",("none",None))
             for n in ["saved","missed","received","scheduled","queue_ram","max_queue_ram","pretrigger_status"]:
                 params["frames",n]=self.saver.get_variable(n,0)    
             params["frames/status_line_check"]=self.saver.get_variable("status_line_check","none")

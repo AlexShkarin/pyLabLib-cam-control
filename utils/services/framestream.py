@@ -320,12 +320,10 @@ class PretriggerBuffer:
 
 class FrameWriteError(IOError):
     """Frame saving error"""
-    def __init__(self, saved=0, kind="generic", desc="Generic error", full_desc=None):
+    def __init__(self, saved=0, kind="generic"):
         self.saved=saved
         self.kind=kind
-        self.desc=desc
-        self.full_desc=full_desc
-        super().__init__("error saving frames: {}; only {} frames saved".format(" "+desc if desc else "",saved))
+        super().__init__("saving frames raised {} error; only {} frames saved".format(kind,saved))
 
 class FrameSaveThread(controller.QTaskThread):
     """
@@ -494,7 +492,12 @@ class FrameSaveThread(controller.QTaskThread):
                     self._write_frame_info(new_chunk,self._get_frame_info_path(),append=append)
                 except FrameWriteError as err:
                     self.v["saved"]=err.saved
-                    self.signal_error(err.kind,err.desc,err.full_desc or err.desc)
+                    self.signal_error(err.kind)
+                    self.save_stop()
+                    self._save_queue.clear()
+                    self.queue_empty=True
+                except OSError as err:
+                    self.signal_error("write_os_error",desc=str(err))
                     self.save_stop()
                     self._save_queue.clear()
                     self.queue_empty=True
@@ -512,19 +515,21 @@ class FrameSaveThread(controller.QTaskThread):
                     self.sleep(0.02)
                 break
     def _finalize_saving(self):
-        self._write_finish()
-        if self._event_log_started:
-            self.write_event_log("Recording stopped")
-        self.finalize_settings()
+        try:
+            self._write_finish()
+            if self._event_log_started:
+                self.write_event_log("Recording stopped")
+            self.finalize_settings()
+        except OSError as err:
+            self.signal_error("write_os_error",desc=str(err))
 
-    def signal_error(self, kind=None, desc=None, full_desc=None):
+    def signal_error(self, kind=None, desc=None):
         """Signal whether an error occurred (``kind is None`` means not error)"""
         if kind is None:
-            self.update_status("error","none",text="None")
+            self.update_status("error",("none",None))
         else:
             self.update_status("result","error",text="Error")
-            self.update_status("error",kind,text=desc)
-            self.v["status/error_text_full"]=full_desc or desc
+            self.update_status("error",(kind,desc))
 
     @staticmethod
     def build_path(base, path_kind="pfx", default_name="frames", subpath=None, idx=None, ext=None):
@@ -761,7 +766,7 @@ class FrameSaveThread(controller.QTaskThread):
                         self._write_tiff(f)
                         nsaved+=len(f)
                     except ValueError:
-                        raise FrameWriteError(nsaved,kind="tiff_size_exceeded",desc="TIFF exceeded 2GB",full_desc="TIFF files do not support sizes above 2GB. Consider using file splitting or switch to a different format.")
+                        raise FrameWriteError(nsaved,kind="tiff_size_exceeded")
             else: # file splitting mechanics
                 for frm in frames:
                     frm_size=len(frm)
@@ -776,7 +781,7 @@ class FrameSaveThread(controller.QTaskThread):
                             frm_saved+=frm_to_save
                             nsaved+=frm_to_save
                         except ValueError:
-                            raise FrameWriteError(nsaved,kind="tiff_size_exceeded",desc="TIFF exceeded 2GB",full_desc="TIFF files do not support sizes above 2GB. Consider using file splitting or switch to a different format.")
+                            raise FrameWriteError(nsaved,kind="tiff_size_exceeded")
                         if nsaved%self.filesplit==0:
                             self._tiff_writer.close()
                             self._file_idx+=1
@@ -874,15 +879,19 @@ class FrameSaveThread(controller.QTaskThread):
         self.v["status_line_check"]="na" if perform_status_check else "off"
         self._last_frame_statusline_idx=None
         self._perform_status_check=perform_status_check
-        file_utils.ensure_dir(os.path.split(self._make_path())[0])
-        if filesplit is not None:
-            self._clean_path()
-        self.write_background()
-        if save_settings:
-            self.write_settings(extra_settings=extra_settings)
-        self.update_status("saving","in_progress",text="Saving in progress")
-        self.update_status("result","in_progress",text="Saving in progress")
-        self.signal_error()
+        try:
+            file_utils.ensure_dir(os.path.split(self._make_path())[0])
+            if filesplit is not None:
+                self._clean_path()
+            self.write_background()
+            if save_settings:
+                self.write_settings(extra_settings=extra_settings)
+            self.update_status("saving","in_progress",text="Saving in progress")
+            self.update_status("result","in_progress",text="Saving in progress")
+            self.signal_error()
+        except OSError as err:
+            self.signal_error("write_os_error",desc=str(err))
+            self.save_stop()
         if self._pretrigger_buffer is not None:
             if not self._clear_pretrigger_on_write:
                 old_buffer=self._pretrigger_buffer.copy()
@@ -941,7 +950,7 @@ class FrameSaveThread(controller.QTaskThread):
                 self.v["received"]+=tot_frames
                 scheduled=True
             if overflow and self.single_shot:
-                self.signal_error("single_shot_overflow",desc="Buffer overflow",full_desc="Single-shot buffer overflow. Consider expanding buffer size in Preferences.")
+                self.signal_error("single_shot_overflow")
                 self.save_stop()
             elif self.v["batch_size"] and self.v["scheduled"]>=self.v["batch_size"]:
                 self.save_stop()

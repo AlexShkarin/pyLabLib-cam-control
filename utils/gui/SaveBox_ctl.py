@@ -71,6 +71,17 @@ class MessageLogWindow(container.QWidgetContainer):
 
 ##### Saving parameter tables #####
 
+_error_description={
+    "none":("None","None"),
+    "tiff_size_exceeded":("TIFF exceeded 2GB","TIFF files do not support sizes above 2GB. Consider using file splitting or switch to a different format."),
+    "single_shot_overflow":("Buffer overflow","Single-shot buffer overflow. Consider expanding buffer size in Preferences."),
+    }
+def _get_error_message(err, long=False):
+    if err[0] in _error_description:
+        return _error_description[err[0]][1 if long else 0]
+    if err[0]=="write_os_error":
+        return "Writing produced an OS error '{}'. Most likely the path is invalid, the location is read-only, or the drive is full.".format(err[1]) if long else "Write error"
+    return "Error"
 class SaveBox_GUI(container.QGroupBoxContainer):
     """
     Saving controller widget.
@@ -278,8 +289,9 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         just_started=not self.record_in_progress and record_in_progress
         self.record_in_progress=record_in_progress
         if just_stopped: # record just stopped
-            if not self.cam_ctl.no_popup and params.get("status/error","none")!="none":
-                QtWidgets.QMessageBox.warning(self,"Saving issue","Saving experienced an issue: {}".format(params.get("status/error_text_full","Error")),QtWidgets.QMessageBox.Ok)
+            if not self.cam_ctl.no_popup and params.get("status/error",("none",None))!=("none",None):
+                error_text=_get_error_message(params["status/error"],long=True)
+                QtWidgets.QMessageBox.warning(self,"Saving issue","Saving experienced an issue: {}".format(error_text),QtWidgets.QMessageBox.Ok)
             elif self.popup_on_missing_frames and not self.cam_ctl.no_popup:
                 if params.get("frames/missed",0)>0 or params.get("frames/status_line_check","na") not in {"na","off","none","ok"}:
                     QtWidgets.QMessageBox.warning(self,"Problems with frames","Some frames are missing, duplicated, or out of order",QtWidgets.QMessageBox.Ok)
@@ -323,7 +335,10 @@ class SaveStatus_GUI(param_table.StatusTable):
             self._finishing_saving_time=general.Countdown(0.5,start=False)
             self.add_status_line("saving",label="Saving:",srcs=self.cam_ctl.save_thread,tags="status/saving_text")
             self.update_status_line("saving")
-            self.add_status_line("issues",label="Issues:",srcs=self.cam_ctl.save_thread,tags="status/error_text")
+            def error_fmt(src, tag, val):
+                self.w["issues"].setStyleSheet("color: red; font-weight: bold" if val[0]!="none" else "")
+                return _get_error_message(val,long=False)
+            self.add_status_line("issues",label="Issues:",srcs=self.cam_ctl.save_thread,tags="status/error",fmt=error_fmt)
             self.update_status_line("issues")
         self.add_num_label("frames/received",formatter=("int"),label="Frames received:")
         self.add_num_label("frames/scheduled",formatter=("int"),label="Frames scheduled:")
@@ -366,7 +381,6 @@ class SaveStatus_GUI(param_table.StatusTable):
             else:
                 self._finishing_saving_time.stop()
             self.w["saving"].setStyleSheet("background: gold; color: black" if self._finishing_saving_time.passed() else "")
-            self.w["issues"].setStyleSheet("color: red; font-weight: bold" if self.v["issues"]!="None" else "")
         if "frames/status_line_check" in params:
             slc=params["frames/status_line_check"]
             slc_ok=slc in {"off","na","none"}
