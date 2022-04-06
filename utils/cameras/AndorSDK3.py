@@ -1,5 +1,5 @@
 from pylablib.devices import Andor
-from pylablib.thread.devices.Andor import AndorSDK3CameraThread, AndorSDK3ZylaThread
+from pylablib.thread.devices.Andor import AndorSDK3CameraThread, AndorSDK3ZylaThread, AndorSDK3NeoThread
 
 from .base import ICameraDescriptor
 from ..gui import cam_gui_parameters, cam_attributes_browser
@@ -41,18 +41,24 @@ class Settings_GUI(GenericCameraSettings_GUI):
         super().setup_settings_tables()
         self.add_parameter(cam_gui_parameters.AttributesBrowserGUIParameter(self,CamAttributesBrowser),"advanced")
 
-class StatusZyla_GUI(GenericCameraStatus_GUI):
+class Status_GUI(GenericCameraStatus_GUI):
     def setup_status_table(self):
+        super().setup_status_table()
         self.add_num_label("buffer_overflows",formatter="int",label="Buffer overflows:")
+    def show_parameters(self, params):
+        super().show_parameters(params)
+        if "missed_frames" in params:
+            self.v["buffer_overflows"]=params["missed_frames"].overflows
+            self.w["buffer_overflows"].setStyleSheet("font-weight: bold" if params["missed_frames"].overflows else "")
+
+class StatusCooled_GUI(Status_GUI):
+    def setup_status_table(self):
+        super().setup_status_table()
         self.add_num_label("temperature_monitor",formatter=("float","auto",1,True),label="Temperature (C):")
-    # Update the interface indicators according to camera parameters
     def show_parameters(self, params):
         super().show_parameters(params)
         if "temperature_monitor" in params:
             self.v["temperature_monitor"]=params["temperature_monitor"]
-        if "missed_frames" in params:
-            self.v["buffer_overflows"]=params["missed_frames"].overflows
-            self.w["buffer_overflows"].setStyleSheet("font-weight: bold" if params["missed_frames"].overflows else "")
 
 
 
@@ -98,7 +104,7 @@ class AndorSDK3CameraDescriptor(ICameraDescriptor):
     def make_gui_control(self, parent):
         return Settings_GUI(parent,cam_desc=self)
     def make_gui_status(self, parent):
-        return GenericCameraStatus_GUI(parent,cam_desc=self)
+        return Status_GUI(parent,cam_desc=self)
 
 
 
@@ -108,11 +114,25 @@ class AndorSDK3ZylaCameraDescriptor(AndorSDK3CameraDescriptor):
     _expands="AndorSDK3"
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
-        if cam.get_device_info().camera_model.lower().startswith("zyla"):
+        if cam.get_device_info().camera_name.lower().startswith("zyla"):
             return super().generate_description(idx,cam=cam,info=info)
     def get_kind_name(self):
         return "Andor Zyla"
     def make_thread(self, name):
         return AndorSDK3ZylaThread(name=name,kwargs=self.settings["params"].as_dict())
     def make_gui_status(self, parent):
-        return StatusZyla_GUI(parent,cam_desc=self)
+        return StatusCooled_GUI(parent,cam_desc=self)
+
+class AndorSDK3NeoCameraDescriptor(AndorSDK3CameraDescriptor):
+    _cam_kind="AndorSDK3Neo"
+    _expands="AndorSDK3"
+    @classmethod
+    def generate_description(cls, idx, cam=None, info=None):
+        if cam.get_device_info().camera_name.lower().startswith("neo"):
+            return super().generate_description(idx,cam=cam,info=info)
+    def get_kind_name(self):
+        return "Andor Neo"
+    def make_thread(self, name):
+        return AndorSDK3NeoThread(name=name,kwargs=self.settings["params"].as_dict())
+    def make_gui_status(self, parent):
+        return StatusCooled_GUI(parent,cam_desc=self)

@@ -38,6 +38,8 @@ class Settings_GUI(GenericCameraSettings_GUI):
     def setup_settings_tables(self):
         super().setup_settings_tables()
         self.add_parameter(FastScanBoolGUIParameter(self),"advanced")
+        perform_status_check=cam_gui_parameters.BoolGUIParameter(self,"perform_status_check","Perform status line check",default=True,add_indicator=False,indirect=True)
+        self.add_parameter(perform_status_check,"advanced").allow_diff_update=True
 
 class Status_GUI(GenericCameraStatus_GUI):
     def setup_status_table(self):

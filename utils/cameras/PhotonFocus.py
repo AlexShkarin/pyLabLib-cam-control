@@ -3,7 +3,7 @@ from pylablib.thread.devices.PhotonFocus import IMAQPhotonFocusCameraThread as B
 from pylablib.core.thread import controller
 
 from .base import ICameraDescriptor
-from ..gui import cam_gui_parameters
+from ..gui import cam_gui_parameters, cam_attributes_browser
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
 
 
@@ -82,6 +82,32 @@ class IMAQPhotonFocusCameraThread(BaseIMAQPhotonFocusCameraThread):
 
 
 
+class CamAttributesBrowser(cam_attributes_browser.CamAttributesBrowser):
+    def _add_attribute(self, name, attribute, value):
+        if not attribute.readable:
+            return
+        indicator=not attribute.writable
+        if attribute.kind in {"INT","UINT"}:
+            self._record_attribute(name,"int",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
+            self.add_integer_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="FLOAT":
+            self._record_attribute(name,"float",attribute,indicator=indicator,rng=(attribute.min,attribute.max))
+            self.add_float_parameter(name,attribute.name,limits=(attribute.min,attribute.max),indicator=indicator)
+        elif attribute.kind=="MODE":
+            if attribute.values:
+                self._record_attribute(name,"enum",attribute,indicator=indicator,rng=attribute.ilabels)
+                self.add_choice_parameter(name,attribute.name,attribute.ilabels,indicator=indicator)
+        elif attribute.kind=="STRING":
+            self._record_attribute(name,"str",attribute,indicator=indicator)
+            self.add_string_parameter(name,attribute.name,indicator=indicator)
+        elif attribute.kind=="BOOL":
+            self._record_attribute(name,"bool",attribute,indicator=indicator)
+            self.add_bool_parameter(name,attribute.name,indicator=indicator)
+    def _get_attribute_range(self, attribute):
+        if attribute.kind in ["int","float"]:
+            return (attribute.min,attribute.max)
+        if attribute.kind=="enum":
+            return attribute.ilabels
 
 
 class BlackOffsetParameter(cam_gui_parameters.IGUIParameter):
@@ -119,7 +145,7 @@ class PhotonFocusCameraSettings_GUI(GenericCameraSettings_GUI):
         if name=="cfr": return cam_gui_parameters.BoolGUIParameter(self,"cfr","Constant frame rate",default=True)
         if name=="bl_offset": return BlackOffsetParameter(self)
         if name=="status_line": return cam_gui_parameters.BoolGUIParameter(self,"status_line","Status line",default=True)
-        if name=="perform_status_check": return cam_gui_parameters.BoolGUIParameter(self,"perform_status_check","Perform status line check",default=True,add_indicator=False)
+        if name=="perform_status_check": return cam_gui_parameters.BoolGUIParameter(self,"perform_status_check","Perform status line check",default=True,add_indicator=False,indirect=True)
         if name=="trigger_interleave": return cam_gui_parameters.BoolGUIParameter(self,"trigger_interleave","Simultaneous readout (interleave)",default=True)
         return super().get_basic_parameters(name)
     def setup_settings_tables(self):
@@ -131,6 +157,7 @@ class PhotonFocusCameraSettings_GUI(GenericCameraSettings_GUI):
         self.add_builtin_parameter("status_line","advanced").allow_diff_update=True
         self.add_builtin_parameter("perform_status_check","advanced").allow_diff_update=True
         self.advanced_params.vs["status_line"].connect(controller.exsafe(lambda v: self.advanced_params.set_enabled("perform_status_check",v)))
+        self.add_parameter(cam_gui_parameters.AttributesBrowserGUIParameter(self,CamAttributesBrowser),"advanced")
     def collect_parameters(self):
         parameters=super().collect_parameters()
         parameters["perform_status_check"]&=parameters["status_line"]

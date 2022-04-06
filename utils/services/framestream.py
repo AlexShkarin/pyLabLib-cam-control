@@ -1,5 +1,4 @@
 from pylablib.misc.file_formats import cam
-from pylablib.devices import PhotonFocus
 from pylablib.devices.interface import camera as camera_utils
 
 from pylablib.core.thread import controller
@@ -488,8 +487,8 @@ class FrameSaveThread(controller.QTaskThread):
                 self._update_queue_ram(self.v["queue_ram"]-chunk_size)
                 flat_chunk=[f for m in new_chunk for f in m.frames]
                 if self._perform_status_check:
-                    if self.v["status_line_check"] in {"ok","na"}:
-                        self.v["status_line_check"]=self._check_status_line(flat_chunk,step=new_chunk[0].metainfo["step"])
+                    if self.v["status_line_check"] in {"ok","na"} and "status_line" in new_chunk[0].metainfo:
+                        self.v["status_line_check"]=self._check_status_line(flat_chunk,status_line=new_chunk[0].metainfo["status_line"],step=new_chunk[0].metainfo["step"])
                 try:
                     self._write_frames(flat_chunk,append=append)
                     self._write_frame_info(new_chunk,self._get_frame_info_path(),append=append)
@@ -669,26 +668,22 @@ class FrameSaveThread(controller.QTaskThread):
             self._event_log_started=True
             return (t,t-self._start_time,msg)
 
-    def _check_status_line(self, frames, step=1):
+    def _check_status_line(self, frames, status_line, step=1):
+        checker=status_line[2]
+        if checker is None:
+            return "none"
         for f in frames:
-            lines=PhotonFocus.get_status_lines(f,check_transposed=False)
-            if lines is None or lines.shape[-1]<2:
+            indices=checker.get_framestamp(f)
+            if indices is None:
                 return "none"
-            if lines.ndim==1:
-                lines=lines[None,:]
-            indices=lines[:,0]
+            if np.ndim(indices)==0:
+                indices=np.array([indices])
             if self._last_frame_statusline_idx is not None:
                 indices=np.insert(indices,0,self._last_frame_statusline_idx)
-            dfs=(indices[1:]-indices[:-1])%(2**24) # the internal counter is only 24-bit
-            if np.any(dfs>2**23) or np.any((dfs>0)&(dfs<step)): # negative
-                return "out_of_oder"
-            if np.any(dfs==0):
-                return "still"
-            if np.any(dfs<step): # step smaller than should be
-                return "out_of_oder"
-            if np.any(dfs>step):
-                return "skip"
             self._last_frame_statusline_idx=indices[-1]
+            res=checker.check_indices(indices,step=step)
+            if res!="ok":
+                return res
         return "ok"
 
     def _write_tiff(self, frames):
