@@ -540,6 +540,9 @@ class CamSelectFrame(param_table.ParamTable):
         self.add_to_layout(self.button_box,location=("next",0,1,"end"))
         self.button_box.accepted.connect(controller.exsafe(lambda: self.on_select(True)))
         self.button_box.rejected.connect(controller.exsafe(lambda: self.on_select(False)))
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.setFixedHeight(self.height())
     camera_selected=Signal()
     def on_select(self, accepted):
         if not self.selected:

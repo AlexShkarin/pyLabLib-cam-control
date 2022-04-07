@@ -56,6 +56,16 @@ def take_screenshots(src):
         src.ctl.sleep(0.1)
         gui_utils.get_screenshot(window=src.tutorial_box).save(sfolder+"interface_tutorial.png")
         src.tutorial_box.close()
+        if "show_attributes_window" in src.c["cam_controller/settings"].advanced_params:
+            window=src.c["cam_controller/settings"].advanced_params.c["attributes_window"]
+            window.show()
+            window.tabs.set_by_name("value")
+            src.ctl.sleep(0.1)
+            gui_utils.get_screenshot(window=window).save(sfolder+"interface_camera_attributes.png")
+            window.tabs.set_by_name("value_props")
+            src.ctl.sleep(0.1)
+            gui_utils.get_screenshot(window=window).save(sfolder+"interface_camera_attributes_settings.png")
+            src.tutorial_box.close()
 
 def on_key_press(src, event):
     """Execute dev functions based on the pressed keys"""

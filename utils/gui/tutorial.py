@@ -174,7 +174,9 @@ class TutorialBox(param_table.ParamTable):
                     "These buttons let you <b>disconnect</b> the camera to use in a different application and then <b>connect</b> it later.",
                         ["connect","disconnect"]),
                 "parameters": ("Parameters",
-                    "Here specific <b>camera parameters</b> are controlled.",
+                    ("Here specific <b>camera parameters</b> are controlled. The details change between different cameras, "
+                    "but some controls such as exposure and ROI are present for almost all of them. "
+                    "You can find more details about camera settings in the <a href='https://pylablib-cam-control.readthedocs.io/en/latest/interface.html#camera-control'>documentation</a>."),
                         [cont.c["settings_tabs"]]),
             }
         if chapter=="cam_status":

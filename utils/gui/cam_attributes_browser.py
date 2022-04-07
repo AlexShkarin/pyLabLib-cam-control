@@ -276,7 +276,7 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
             if self.props_table.v["p_pause",n]=="clear":
                 pause="clear"
                 break
-            if self.props_table.v["p_pause",n]=="pause":
+            if self.props_table.v["p_pause",n]=="restart":
                 pause="pause"
         self.cam_ctl.dev.ca.apply_parameters({"camera_attributes/"+n:self.params_table.v["v",n] for n in names},pause=pause)
     @exsafe

@@ -44,6 +44,24 @@ The acquisition process is controlled by ``Start Acquisition`` and ``Stop Acquis
 
 Finally, ``Connect`` and ``Disconnect`` button control the camera connection. By default, the camera is connected on startup. However, if it is temporarily required in some other software, it can be disconnected, and then re-connected again.
 
+.. _interface_camera_attributes:
+
+Camera attributes
+-------------------------
+
+.. image:: interface_camera_attributes.png
+
+Some cameras such as Andor SDK3, Hamamatsu, Photometrics and Princeton Instruments support camera attributes in their API. In principle, they provide almost complete control over camera's hardware, but their selection, naming and meaning varies a lot between different manufacturers and event different camera models. Therefore, the software provides a generic interface to access these attributes, but does not guard about potential errors arising due to improper settings, which can include the software shutdown if, e.g., the settings interfere with the readout parameters. Hence, one needs to be somewhat careful when using these, and expect potential issues.
+
+Th attributes window is accessed via ``Show attributes`` button in the advanced camera settings. It has two tabs. The first one gives access to the attribute values. In it the first columns (``Attribute``) shows the attribute name, the next one (``To set``) lets you select a new attribute value (the control is absent if the attribute is read-only), which is followed by a ``Set`` button, which sets the attribute after entry, and the indicator showing the current attribute value. Finally, if setting the attribute resulted in an error, it will be indicated in the last column, with the explanation appearing when the mouse is hovered over.
+
+.. image:: interface_camera_attributes_settings.png
+
+The second tab defines some of the attributes behavior. The first control, ``On set``, describes how the acquisition is affected during the attribute settings. It can be ``Clear``, which means that it is temporarily stopped and the frame buffer is cleared (the safest but also the slowest option), ``Restart``, in which the acquisition is stopped but the buffer remains allocated (this is somewhat faster but, among other things, requires the frame size to remain constant), and ``None``, meaning that the camera acquisition is not affected (the fastest, but not supported by all cameras).
+
+The second control, ``Autoset``, defines when the attribute is set. It can be ``None`` (only set when the ``Set`` button is pressed), ``Startup`` (set on the software setup to, e.g., set up some basic parameters), or ``Always`` (set on startup and any time the entered value is changed).
+
+Finally, ``Quick access`` cna select whether the attribute should show up in the "quick access" mode. Since there are tens or even hundreds of attributes, and only a handful of them are usually relevant, there's a "quick access" mode enabled by a checkbox in the lower left corner, which switches to showing only the marked attributes. This provides more convenience in dealing with the same recurring set of attributes.
 
 .. _interface_camera_status:
 

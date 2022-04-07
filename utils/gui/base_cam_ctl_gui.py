@@ -204,7 +204,7 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
         self.add_status_line("acquisition",label="Acquisition:",srcs=self.cam_ctl.cam_thread,tags="status/acquisition_text")
         self.update_status_line("acquisition")
         self.add_num_label("frames/acquired",formatter="int",label="Frames acquired:")
-        self.add_text_label("frames/readstat",label="Read / dropped:")
+        self.add_text_label("frames/readstat",label="Read | dropped:")
         self.add_text_label("frames/buffstat",label="Buffer fill status:")
         self.add_num_label("frames/fps",formatter=".2f",label="FPS:")
         self.setup_status_table()
@@ -219,7 +219,7 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
                 self.v[p]=params[p]
         dropped=params["frames/acquired"]-params["frames/read"]
         sdropped="<b>{:d}</b>".format(dropped) if dropped else "0"
-        self.v["frames/readstat"]="{:d} / {}".format(params["frames/read"],sdropped)
+        self.v["frames/readstat"]="{:d} | {}".format(params["frames/read"],sdropped)
         if "frames/buffer_filled" in params and "buffer_size" in params:
             self.v["frames/buffstat"]="{:d} / {:d}".format(params["frames/buffer_filled"],params["buffer_size"])
         else:
