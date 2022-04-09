@@ -70,7 +70,7 @@ General parameters
 
 ``interface/cam_control/roi_kind``
     | ROI entry method in camera control.
-    | *Values*: ``minmax`` (ROI is defined by minimal and maximal coordinates), or ``minsize`` (ROI is defined by minimal coordinates and size)
+    | *Values*: ``minmax`` (ROI is defined by minimal and maximal coordinates), ``minsize`` (ROI is defined by minimal coordinates and size), or ``centersize`` (ROI is defined by center coordinates and size)
     | *Default*: ``minsize`` for PhotonFocus cameras, ``minmax`` for all other cameras
 
 ``frame_processing/status_line_policy``

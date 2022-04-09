@@ -285,8 +285,8 @@ class ROIGUIParameter(IGUIParameter):
 
     Args:
         settings: base settings widget
-        bin_kind: binning kind; can be ``none`` (no binning), ``same`` (same for both axes), or ``both`` (different on both axes)
-        roi_kind: roi setting kind; can be ``minmax`` or ``minsize``.s
+        bin_kind: binning kind; can be ``"none"`` (no binning), ``"same"`` (same for both axes), or ``"both"`` (different on both axes)
+        roi_kind: roi setting kind; can be ``"minmax"``, ``"minsize"``, or ``"centersize"``
     """
     def __init__(self, settings, bin_kind="none", roi_kind="minmax"):
         super().__init__(settings)

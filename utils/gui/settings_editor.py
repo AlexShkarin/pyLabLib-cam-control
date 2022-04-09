@@ -150,8 +150,8 @@ class SettingsEditor(widgets.QWidgetContainer):
         self.add_choice_parameter(table,"frame_processing/status_line_policy","Status line display policy",
             {"keep":"Keep","cut":"Cut","zero":"Zero","median":"Median","duplicate":"Duplicate"},default="duplicate",
             description={"keep":"Keep unchanged","cut":"Cut row off","zero":"Set row to zero","median":"Set row to image median","duplicate":"Duplicate previous row"})
-        self.add_choice_parameter(table,"interface/cam_control/roi_kind","ROI entry method",{"minmax":"Min-Max","minsize":"Min-Size"},
-            description={"minmax":"Minimal and maximal coordinates","minsize":"Minimal coordinates and size"},default="minmax")
+        self.add_choice_parameter(table,"interface/cam_control/roi_kind","ROI entry method",{"minmax":"Min-Max","minsize":"Min-Size","centersize":"Center-Size"},
+            description={"minmax":"Minimal and maximal coordinates","minsize":"Minimal coordinates and size","centersize":"Center coordinates and size"},default="minmax")
         if cam_table:
             table.add_spacer(10)
             self.add_string_parameter(table,"camera/display_name","Camera name",default=None)
