@@ -59,6 +59,7 @@ class UC480CameraDescriptor(ICameraDescriptor):
         except (uc480.uc480Error, OSError):
             if verbose: print("Error loading or running {} library: required software ({}) must be missing\n".format(
                     backend,cls._backend_software[backend]))
+            if verbose=="full": cls.print_error()
             return
         cam_num=len(cam_infos)
         if not cam_num:

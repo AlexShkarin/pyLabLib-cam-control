@@ -22,20 +22,35 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser(description="Camera autodetection")
     parser.add_argument("--silent","-s",help="silent execution",action="store_true")
     parser.add_argument("--yes","-y",help="automatically confirm settings file overwrite",action="store_true")
+    parser.add_argument("--show-errors",help="show errors raised on camera detection",action="store_true")
     parser.add_argument("--wait",help="show waiting message for 3 seconds in the end",action="store_true")
     parser.add_argument("--config-file","-cf", help="configuration file path",metavar="FILE",default="settings.cfg")
     args=parser.parse_args()
     if not args.silent:
         print("Detecting cameras...\n")
 
-from pylablib.core.utils import dictionary
+from pylablib.core.utils import dictionary, general as general_utils
 from pylablib.core.fileio.loadfile import load_dict
 from pylablib.core.fileio.savefile import save_dict
 import pylablib
 
 import time
+import threading
+import datetime
 
 from utils.cameras import camera_descriptors
+
+### Redirecting console / errors to file logs ###
+log_lock=threading.Lock()
+class StreamLogger(general_utils.StreamFileLogger):
+    def __init__(self, path, stream=None):
+        general_utils.StreamFileLogger.__init__(self,path,stream=stream,lock=log_lock)
+        self.start_time=datetime.datetime.now()
+    def write_header(self, f):
+        f.write("\n\n"+"-"*50)
+        f.write("\nStarting {} {:on %Y/%m/%d at %H:%M:%S}\n\n".format(os.path.split(sys.argv[0])[1],self.start_time))
+sys.stderr=StreamLogger("logerr.txt",sys.stderr)
+sys.stdout=StreamLogger("logout.txt",sys.stdout)
 
 
 def detect_all(verbose=False):
@@ -82,4 +97,8 @@ if __name__=="__main__":
         if "dlls" in settings:
             for k,v in settings["dlls"].items():
                 pylablib.par["devices/dlls",k]=v
-    update_settings_file(cfg_path=args.config_file,verbose=not args.silent,confirm=not (args.silent or args.yes),wait=args.wait)
+    if args.silent:
+        verbose=False
+    else:
+        verbose="full" if args.show_errors else True
+    update_settings_file(cfg_path=args.config_file,verbose=verbose,confirm=not (args.silent or args.yes),wait=args.wait)

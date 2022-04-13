@@ -75,6 +75,7 @@ class DCAMCameraDescriptor(ICameraDescriptor):
             cam_num=DCAM.get_cameras_number()
         except (DCAM.DCAMError, OSError):
             if verbose: print("Error loading or running the DCAM library: required software (Hamamtsu HOKAWO or DCAM API) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         if cam_num==0:
             if verbose: print("Found no DCAM cameras\n")
@@ -88,7 +89,7 @@ class DCAMCameraDescriptor(ICameraDescriptor):
                     if verbose: print("\tVendor {}, model {}".format(device_info.vendor,device_info.model))
                     yield cam,None
             except DCAM.DCAMError:
-                pass
+                if verbose=="full": cls.print_error()
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
         device_info=cam.get_device_info()

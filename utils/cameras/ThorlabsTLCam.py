@@ -24,6 +24,7 @@ class ThorlabsTLCamCameraDescriptor(ICameraDescriptor):
             cam_infos=Thorlabs.list_cameras_tlcam()
         except (Thorlabs.ThorlabsTLCameraError, OSError):
             if verbose: print("Error loading or running the Thorlabs TSI library: required software (ThorCam) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         cam_num=len(cam_infos)
         if not cam_num:
@@ -36,7 +37,7 @@ class ThorlabsTLCamCameraDescriptor(ICameraDescriptor):
                 with Thorlabs.ThorlabsTLCamera(serial) as cam:
                     yield cam,serial
             except Thorlabs.ThorlabsTLCameraError:
-                pass
+                if verbose=="full": cls.print_error()
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
         device_info=cam.get_device_info()

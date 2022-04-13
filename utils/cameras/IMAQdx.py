@@ -89,6 +89,7 @@ class IMAQdxCameraDescriptor(ICameraDescriptor):
             cams=IMAQdx.list_cameras()
         except (IMAQdx.IMAQdxError, OSError, AttributeError):
             if verbose: print("Error loading or running the IMAQdx library: required software (NI IMAQdx) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         if len(cams)==0:
             if verbose: print("Found no IMAQdx cameras\n")

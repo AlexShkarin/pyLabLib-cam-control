@@ -64,6 +64,7 @@ class PCOCameraDescriptor(ICameraDescriptor):
             cam_num=PCO.get_cameras_number()
         except (PCO.PCOSC2Error, OSError):
             if verbose: print("Error loading or running the PCO SC2 library: required software (PCO SDK) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         if cam_num==0:
             if verbose: print("Found no PCO cameras\n")
@@ -77,7 +78,7 @@ class PCOCameraDescriptor(ICameraDescriptor):
                     if verbose: print("\tModel {}, serial number {}".format(device_info.model,device_info.serial_number))
                     yield cam,None
             except PCO.PCOSC2Error:
-                pass
+                if verbose=="full": cls.print_error()
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
         device_info=cam.get_device_info()

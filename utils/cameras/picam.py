@@ -50,6 +50,7 @@ class PicamCameraDescriptor(ICameraDescriptor):
             cams=PrincetonInstruments.list_cameras()
         except (PrincetonInstruments.PicamError, OSError):
             if verbose: print("Error loading or running the Picam library: required software (Princeton Instruments PICam) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         if len(cams)==0:
             if verbose: print("Found no Picam cameras\n")

@@ -1,5 +1,8 @@
 from pylablib.core.utils import dictionary
 
+import traceback
+import sys
+
 
 class ICameraDescriptor:
     """
@@ -23,6 +26,11 @@ class ICameraDescriptor:
         if "display_name" in desc:
             print("\tdisplay_name = '{}'".format(desc["display_name"]))
         print("")
+    @classmethod
+    def print_error(cls):
+        """Print an exception traceback"""
+        traceback.print_exc()
+        print("",file=sys.stderr)
     @classmethod
     def iterate_cameras(cls, verbose=False):
         """Iterate over all cameras of the given type"""

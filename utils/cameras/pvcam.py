@@ -149,6 +149,7 @@ class PvcamCameraDescriptor(ICameraDescriptor):
             cams=Photometrics.list_cameras()
         except (Photometrics.PvcamError, OSError):
             if verbose: print("Error loading or running the Pvcam library: required software (Photometrics PVCAM) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         cam_num=len(cams)
         if not cam_num:
@@ -163,6 +164,7 @@ class PvcamCameraDescriptor(ICameraDescriptor):
                     yield cam,name
             except Photometrics.PvcamError:
                 if verbose: print("Could not open Pvcam camera name={}".format(name))
+                if verbose=="full": cls.print_error()
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
         device_info=cam.get_device_info()

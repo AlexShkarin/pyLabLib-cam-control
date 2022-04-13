@@ -90,6 +90,7 @@ class AndorSDK2CameraDescriptor(ICameraDescriptor):
             cam_num=Andor.get_cameras_number_SDK2()
         except (Andor.AndorError, OSError):
             if verbose: print("Error loading or running the Andor SDK2 library: required software (Andor Solis) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         if not cam_num:
             if verbose: print("Found no Andor SDK2 cameras\n")
@@ -103,7 +104,7 @@ class AndorSDK2CameraDescriptor(ICameraDescriptor):
                     if verbose: print("\tModel {}".format(device_info.head_model))
                     yield cam,None
             except Andor.AndorError:
-                pass
+                if verbose=="full": cls.print_error()
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
         device_info=cam.get_device_info()

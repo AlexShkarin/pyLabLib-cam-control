@@ -218,6 +218,7 @@ class PhotonFocusCameraDescriptor(ICameraDescriptor):
             pf_cams=PhotonFocus.list_cameras(only_supported=False)
         except (PhotonFocus.PFCamError, OSError):
             if verbose: print("Error loading or running the PFCam library: required software (PhotonFocus PFRemote) must be missing\n")
+            if verbose=="full": cls.print_error()
             return
         pf_cams=[(p,d) for (p,d) in pf_cams if d.manufacturer!="RS-232"]  # these usually don't have cameras, but can lead to very long polling times
         if len(pf_cams)==0:
