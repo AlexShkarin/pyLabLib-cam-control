@@ -29,6 +29,7 @@ class IFrameFilter:
         if self._class_description is not None:
             self.description["description"]=self._class_description
         self.p={}
+        self._plotter_selector=None
     @classmethod
     def get_class_name(cls, kind="name"):
         """
@@ -86,12 +87,9 @@ class IFrameFilter:
                 default=list(options)[0]
         self.description["gui/parameters"].append({"name":name,"label":label,"kind":kind,"limit":limit,"fmt":fmt,"options":options or {},"default":default,"indicator":indicator})
         self.p[name]=default
-    def add_plotter_selector(self, default="__default__"):
-        """Add the possibility to select different plotter settings depending on the image"""
-        self.add_parameter("__plotter_selector__",kind="virtual",default=default,indicator=True)
     def select_plotter(self, selector):
         """Select a specific plotter settings set"""
-        self.set_parameter("__plotter_selector__",selector)
+        self._plotter_selector=selector
 
     ## Setup functions ##
     def setup(self):
@@ -167,6 +165,8 @@ class IFrameFilter:
         frame=self.generate_frame()  # pylint: disable=assignment-from-none
         if frame is not None:
             data["frame"]=frame
+        if self._plotter_selector is not None:
+            data["plotter/selector"]=self._plotter_selector
         return data
 
 

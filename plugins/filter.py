@@ -30,6 +30,8 @@ class FilterPanel(widgets.QFrameContainer):
         self.plotter=plotter
         self.filter_captions=filters
         self.filter_defaults=dictionary.Dictionary()
+        self.current_plotter=None
+        self.plotter_parameters=None
         self.params=self.add_child("params",widgets.ParamTable(self))
         self.params.setup(add_indicator=False)
         self.params.add_combo_box("filter_id",label="Filter:",options=filters,out_of_range="ignore")
@@ -52,13 +54,6 @@ class FilterPanel(widgets.QFrameContainer):
         @controller.exsafe
         def enable_filter(enabled):
             self.plugin.ca.enable(enabled)
-            if self.current_filter is not None:
-                if enabled:
-                    self.store_default_values(only_plot=True)
-                    self.load_default_values(self.current_filter[0],only_plot=True)
-                else:
-                    self.store_default_values(self.current_filter[0],only_plot=True)
-                    self.load_default_values(only_plot=True)
         self.params.vs["enabled"].connect(enable_filter)
         enable_filter(True)
         self.filter_params_table=self.add_child("filter_params",widgets.ParamTable(self),gui_values_path="current_filter_params")
@@ -74,15 +69,14 @@ class FilterPanel(widgets.QFrameContainer):
         def set_filter_defaults(filter_defaults):
             self.filter_defaults=filter_defaults
         self.add_property_element("defaults",lambda: self.filter_defaults,set_filter_defaults)
-        self.add_timer_event("update_indicators",self.update_indicators,period=0.2)
 
     def start(self):
-        self.load_default_values(only_plot=True)
+        self.load_default_values()
         super().start()
     @controller.call_in_gui_thread
     def setup_filter(self, name, description):
         """Setup filter panel given the description and load its default values"""
-        self.store_default_values()
+        self.store_default_values(exclude=["__plotter__"])
         self.current_filter=name,description
         self.params.v["loaded_filter"]=self.filter_captions.get(name,name)
         self.params.v["description"]=description.get("description","")
@@ -120,48 +114,72 @@ class FilterPanel(widgets.QFrameContainer):
                     self.filter_params_table.add_virtual_element(pname,value=pdefault)
             else:
                 raise ValueError("unrecognized parameter kind: {}".format(pkind))
-        self.load_default_values(name)
-        if not self.params.v["enabled"]:
-            self.load_default_values(only_plot=True)
+        self.load_default_values(name,exclude=["__plotter__"])
     @controller.call_in_gui_thread
     def clear_filter(self):
         """Clear filter panel and store its default values"""
         if self.current_filter is not None:
-            if not self.params.v["enabled"]:
-                self.store_default_values(only_plot=True)
-                self.load_default_values(self.current_filter[0],only_plot=True)
-            self.store_default_values(self.current_filter[0])
+            self.store_default_values(self.current_filter[0],exclude=["__plotter__"])
             self.filter_params_table.clear()
             self.filter_status_table.clear()
             self.params.v["description"]=""
             self.params.v["loaded_filter"]=""
             self.current_filter=None
-            self.load_default_values()
-    def update_indicators(self, values=None):
+            self.load_default_values(exclude=["__plotter__"])
+    def update_indicators(self, values, data=None):
         """Update filter indicators and status values"""
-        if values is None:
-            values=self.plugin.csi.get_all_parameters()
-        if values is None or not self.is_running():
+        if not self.is_running():
             return
-        plot_update="__plotter_selector__" in values and "__plotter_selector__" in self.filter_status_table.v and \
-                    values["__plotter_selector__"]!=self.filter_status_table.v["__plotter_selector__"] and self.current_filter is not None and self.params.v["enabled"]
-        if plot_update:
-            self.store_default_values(self.current_filter[0],only_plot=True)
+        image_updated=False
+        if self.plotter is not None and data is not None:
+            new_plotter=data.get("source",None)
+            new_selector=data.get("plotter/selector",None)
+            plotter_updated=new_plotter!=self.current_plotter or new_selector!=self.get_aux(self.current_plotter,"plotter_selector")
+            if plotter_updated:
+                self.store_default_values(self.current_plotter,include=["__plotter__"])
+                self._store_plotter_selector(self.current_plotter)
+                self.set_aux(new_plotter,"plotter_selector",new_selector)
+                self._load_plotter_selector(new_plotter)
+                self.load_default_values(new_plotter,include=["__plotter__"])
+            if "frame" in data:
+                self.plotter.plt.set_image(data["frame"])
+                image_updated=self.plotter.plt.update_image(do_redraw=plotter_updated)
+            elif plotter_updated:
+                self.plotter.plt.set_image([[np.nan]])
+                self.plotter.plt.update_image(do_redraw=True)
+            self.current_plotter=new_plotter
         self.filter_params_table.set_all_indicators(values)
         self.filter_status_table.set_all_values(values)
-        if plot_update:
-            self.load_default_values(self.current_filter[0],only_plot=True,plotter_selector=values["__plotter_selector__"])
         if self.isVisible() and self.plotter is not None and not self.plotter.isVisible():
             self.params.v["filter_tab_label"]="Currently displaying a non-filter tab"
             self.params.w["filter_tab_label"].setStyleSheet("background: gold; color: black")
         else:
             self.params.v["filter_tab_label"]=""
             self.params.w["filter_tab_label"].setStyleSheet("")
+        return image_updated
+    def get_aux(self, name, path, default=None):
+        """Get auxiliary data for the given filter name (if ``None``, return the default)"""
+        if name is not None:
+            return self.filter_defaults.get((name,"__aux__",path),default=default)
+        return default
+    def set_aux(self, name, path, value):
+        """Set auxiliary data for the given filter name (if ``None``, do nothing)"""
+        if name is not None or self.current_filter is not None:
+            self.filter_defaults.add_entry((name,"__aux__",path),value,force=True)
+    def _load_plotter_selector(self, plotter):
+        selector=self.get_aux(plotter,"plotter_selector")
+        selector_values=self.get_aux(plotter,("plotter",selector))
+        if selector_values is not None:
+            self.filter_defaults.add_entry((plotter,"__plotter__"),selector_values,force=True)
+    def _store_plotter_selector(self, plotter):
+        selector=self.get_aux(plotter,"plotter_selector")
+        if selector is not None:
+            self.set_aux(plotter,("plotter",selector),self.filter_defaults.get((plotter,"__plotter__"),{}))
     def get_all_values(self):
-        if self.current_filter is not None and self.params.v["enabled"]:
-            self.store_default_values(self.current_filter[0])
-        else:
-            self.store_default_values(only_plot=True)
+        if self.current_filter is not None:
+            self.store_default_values(self.current_filter[0],exclude=["__plotter__"])
+        self.store_default_values(self.current_plotter,include=["__plotter__"])
+        self._store_plotter_selector(self.current_plotter)
         values=super().get_all_values()
         values["loaded"]=self.current_filter is not None
         if "current_filter_params" in values:
@@ -170,7 +188,8 @@ class FilterPanel(widgets.QFrameContainer):
     def set_all_values(self, values):
         super().set_all_values(values)
         if "defaults" in values:
-            self.load_default_values(self.current_filter[0] if self.current_filter else None)
+            self.load_default_values(self.current_filter[0] if self.current_filter else None,exclude=["__plotter__"])
+            self.load_default_values(self.current_plotter,include=["__plotter__"])
         if "loaded" in values:
             if values["loaded"]:
                 self.v["load_filter"]=True
@@ -181,58 +200,54 @@ class FilterPanel(widgets.QFrameContainer):
         values=self.filter_params_table.get_all_values()
         if self.plotter is not None:
             plot_values=self.plotter.get_all_values()
-            for p in ["hlinepos","vlinepos"]:
-                if p in plot_values:
-                    del plot_values[p]
             values["__plotter__"]=plot_values
-        if "__plotter_selector__" in self.filter_status_table.v:
-            values["__plotter_selector__"]=self.filter_status_table.v["__plotter_selector__"]
         return values.copy()
+    def _set_plotter_parameters(self, values):
+        if self.plotter and values:
+            self.plotter.set_all_values(values)
+            if not values.get("update_image",True):
+                self.plotter.plt.arm_single()
     def set_filter_parameters(self, values):
         """Set filter parameters, including plotter settings"""
         if "__plotter__" in values:
-            if self.plotter is not None:
-                self.plotter.set_all_values(values["__plotter__"])
-            del values["__plotter__"]
+            self._set_plotter_parameters(values.detach("__plotter__"))
         self.filter_params_table.set_all_values(values)
         self.filter_status_table.set_all_values(values)
-    def _plotter_path(self, values=None, selector=None):
-        if selector is None and values is not None:
-            selector=values.get("__plotter_selector__")
-        return ("__plotter__",) if selector is None else ("__plotter__",selector)
-    def load_default_values(self, name=None, only_plot=False, plotter_selector=None):
+    def load_default_values(self, name=None, include=None, exclude=None):
         """
         Load filter parameters from the list of stored values.
         
         `name` specifies the filter name (``None`` means the state with the filter disabled).
-        If ``only_plot==True``, only load plotter-related values.
+        `include` and `exclude` halp specify particular branches to load.
         """
         name=name or "__no_filter__"
-        values=self.filter_defaults.get(name,{}).copy()
-        plotter_values=dictionary.Dictionary({"__plotter__":values.get(self._plotter_path(values,selector=plotter_selector),{})})
-        if only_plot:
-            if "__plotter_selector__" in values:
-                plotter_values["__plotter_selector__"]=plotter_selector or values["__plotter_selector__"]
-            values=plotter_values
-        elif "__plotter__" in values:
-            values.add_entry("__plotter__",plotter_values["__plotter__"],force=True)
+        values=self.filter_defaults.get(name,dictionary.Dictionary()).copy()
+        if exclude is not None:
+            for k in exclude:
+                if k in values:
+                    del values[k]
+        values.del_entry("__aux__")
+        if include is not None:
+            values=values.collect(include)
         self.set_filter_parameters(values)
-    def store_default_values(self, name=None, only_plot=False):
+    def store_default_values(self, name=None, include=None, exclude=None):
         """
         Save filter parameters to the list of stored values.
         
         `name` specifies the filter name (``None`` means the state with the filter disabled).
-        If ``only_plot==True``, only store plotter-related values.
+        `include` and `exclude` halp specify particular branches to store.
         """
         name=name or "__no_filter__"
         values=self.get_filter_parameters()
-        plotter_values=values.detach("__plotter__") if "__plotter__" in values else {}
-        if not only_plot:
-            values["__plotter__"]=self.filter_defaults.get((name,"__plotter__"),{})
+        exclude=(list(exclude) if exclude else [])+["__aux__"]
+        for k in exclude:
+            values.add_entry(k,self.filter_defaults.get(name,{}).get(k,{}),force=True)
+        if include is None:
             self.filter_defaults.add_entry(name,values,force=True)
-        elif "__plotter_selector__" in values:
-            self.filter_defaults[name,"__plotter_selector__"]=values["__plotter_selector__"]
-        self.filter_defaults.add_entry((name,)+self._plotter_path(values),plotter_values,force=True)
+        else:
+            include=[dictionary.normalize_path(k) for k in include]
+            for k in include:
+                self.filter_defaults.add_entry([name]+k,values.get(k,{}),force=True)
 
 
 
@@ -268,6 +283,7 @@ class FilterThread(controller.QTaskThread):
         self.frames_src=StreamSource(FramesMessage,sn=self.name)
         self.enabled=False
         self.fctl=None
+        self._filter_received=False
         self._last_frame=None
         self._last_frame_index=None
         self._new_frames_received=True
@@ -279,6 +295,7 @@ class FilterThread(controller.QTaskThread):
         self.tag_out=tag_out or tag+"/show"
         self.add_command("set_filter")
         self.add_command("remove_filter")
+        self.add_command("prime_filter")
         self.add_command("get_new_data",priority=-5)
         self.add_command("enable")
         self.add_command("set_parameter")
@@ -302,6 +319,7 @@ class FilterThread(controller.QTaskThread):
         if self.fctl is not None:
             self.fctl.cleanup()
             self.fctl=None
+            self._filter_received=False
             self.v["filter_desc"]={}
     
     def receive_message(self, src, tag, msg):
@@ -321,16 +339,23 @@ class FilterThread(controller.QTaskThread):
             frames=np.array(frames) if frames and frames[0].ndim==2 else np.concatenate(frames,axis=0)
         frames=remove_status_line(frames,status_line,policy=self.status_line_policy,copy=False)
         self.fctl.receive_frames(frames)
+        self._filter_received=True
 
-    def get_new_data(self):
+    def prime_filter(self):
+        """Feed the latest received frame to a newly loaded filter"""
+        if self.fctl is not None and self._last_frame is not None and not self._filter_received:
+            self.fctl.receive_frames(self._last_frame[None,:,:])
+            self._filter_received=True
+    def get_new_data(self, only_new=True):
         """Request new data from the filter"""
-        if not self._new_frames_received:
+        if not self._new_frames_received and only_new:
             return None,None
         self._new_frames_received=False
         if self.enabled and self.fctl is not None:
             data=self.fctl.generate_data()
         else:
             data={"frame":self._last_frame} if self._last_frame is not None else {}
+        data["source"]=self.fctl.get_class_name() if (self.enabled and self.fctl is not None) else None
         if "frame" in data:
             self.send_multicast(dst="any",tag=self.tag_out,value=self.frames_src.build_message(data["frame"],self._last_frame_index,source=self.name))
         return data,self.update_parameters()
@@ -370,12 +395,14 @@ class FilterPlugin(base.IPlugin):
         self.ctl.add_command("enable",self.enable)
         self.ctl.add_command("set_parameter",self.set_parameter)
         self.ctl.add_command("get_all_parameters",self.get_all_parameters)
+        self.ctl.add_command("update_plots",self.update_plots)
         self.setup_gui_sync()
         self.extctls["resource_manager"].cs.add_resource("frame/display",self.full_name,ctl=self.ctl,
             caption=self.caption,src=self.filter_thread.name,tag=self.filter_thread.tag_out,frame=None)
         self.extctls["resource_manager"].cs.add_resource("process_activity","processing/"+self.full_name,ctl=self.ctl,
             caption=self.caption,order=10)
         self.ctl.add_job("update_plots",self.update_plots,0.1)
+        self.ctl.add_job("update_indicators",self.update_indicators,0.1,priority=-15)
     def setup_gui(self):
         self.plot_tab=self.gui.add_plot_tab("plt_tab",self.caption,kind="empty")
         self.proc_indicator=self.plot_tab.add_child("processing_indicator",ProcessingIndicator_ctl.ProcessingIndicator_GUI(self.plot_tab),gui_values_path="procind")
@@ -411,12 +438,10 @@ class FilterPlugin(base.IPlugin):
         self.proc_indicator.update_indicators()
 
     @controller.call_in_gui_thread
-    def _update_image(self, img, values=None):
-        self.plotter.plt.set_image(img)
-        if self.plotter.plt.update_image():
+    def _update_image(self, values=None, data=None):
+        if values is not None and self.filter_panel.update_indicators(values=values,data=data):
             self.proc_indicator.update_indicators()
             self.display_settings_table.on_new_frame()
-            self.filter_panel.update_indicators(values=values)
             return True
         return False
     def _get_filter_state(self):
@@ -424,12 +449,15 @@ class FilterPlugin(base.IPlugin):
         if current_filter is not None and self.filter_panel.v["enabled"]:
             return current_filter[1]["caption"]
         return None
-    def update_plots(self):
+    def update_indicators(self):
+        self._update_image(values=self.filter_thread.get_variable("filter_parameters",None))
+    def update_plots(self, force=False):
         """Update plots"""
-        data,values=self.filter_thread.cs.get_new_data()
-        if data is not None and "frame" in data:
-            if self._update_image(data["frame"],values):
-                self.extctls["resource_manager"].csi.update_resource("frame/display",self.full_name,frame=data["frame"])
+        if force:
+            self.filter_thread.cs.prime_filter()
+        data,values=self.filter_thread.cs.get_new_data(only_new=not force)
+        if self._update_image(values=values,data=data):
+            self.extctls["resource_manager"].csi.update_resource("frame/display",self.full_name,frame=data["frame"])
 
     def _collect_filters(self):
         fcls=find_filters(os.path.join("plugins","filters"),root=self.gui.settings["runtime/root_folder"])
@@ -438,18 +466,21 @@ class FilterPlugin(base.IPlugin):
 
     def load_filter(self, name):
         """Load filter with the given name"""
-        self.unload_filter()
+        self.unload_filter(update=False)
         self.filter=self.filter_classes[name]()
         self.filter_thread.cs.set_filter(self.filter)
         self.filter_panel.setup_filter(name,self.filter_thread.v["filter_desc"])
         self.update_filter_state()
-    def unload_filter(self):
+        self.ca.update_plots(force=True)
+    def unload_filter(self, update=True):
         """Unload the currently loaded filter"""
         if self.filter is not None:
             self.filter_thread.csi.remove_filter()
             self.filter_panel.clear_filter()
             self.filter=None
-            self.update_filter_state()
+            if update:
+                self.update_filter_state()
+                self.ca.update_plots(force=True)
 
     def update_filter_state(self):
         enabled=(self.filter is not None) and self.filter_enabled
@@ -458,7 +489,8 @@ class FilterPlugin(base.IPlugin):
         """Enable or disable the filter"""
         self.filter_enabled=enabled
         self.update_filter_state()
-        return self.filter_thread.cs.enable(enabled=enabled)
+        self.filter_thread.cs.enable(enabled=enabled)
+        self.update_plots(force=True)
     def set_parameter(self, name, value):
         """Set the filter parameter"""
         return self.filter_thread.cs.set_parameter(name,value)
