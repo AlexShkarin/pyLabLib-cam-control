@@ -907,7 +907,7 @@ class FrameSaveThread(controller.QTaskThread):
         """Stop saving routine"""
         if self._saving and not self._stopping:
             self._stopping=True
-            self._enable_garbage_collect(self.single_shot)
+            self._enable_garbage_collect(True)
             self.update_status("saving","stopping",text="Finishing saving")
 
 

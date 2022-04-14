@@ -217,14 +217,20 @@ class TimeMapFilter(base.IMultiFrameFilter):
         self.add_parameter("period",label="Frame step",kind="int",limit=(1,None),default=1)
         self.add_parameter("orientation",label="Orientation",kind="select",options={"rows":"Rows","cols":"Columns"})
         self.add_parameter("position",label="Position",kind="int",limit=(0,None))
+        self.add_parameter("track_lines",label="Use plot lines",kind="check")
         self.add_parameter("width",label="Width",kind="int",limit=(1,None),default=10)
         self.add_parameter("show_map_info",label="Showing",kind="select",options={"map":"Time map","frame":"Frame"})
+        self.add_linepos_parameter(default=None)
         self.select_plotter("map")
+        self.add_rectangle("selection",(0,0),(0,0))
     def set_parameter(self, name, value):
         super().set_parameter(name,value)
         buffer_size=value if name=="length" else None
         buffer_step=value if name=="period" else None
         self.reshape_buffer(buffer_size,buffer_step)
+        if name in ["linepos","orientation","track_lines"] and self.p["show_map_info"]=="frame" and self.p["track_lines"] and self.p["linepos"]:
+            idx=0 if self.p["orientation"]=="rows" else 1
+            self.set_parameter("position",int(self.p["linepos"][idx]))
     def _get_region(self, shape):
         p,w=self.p["position"],self.p["width"]
         axis=0 if self.p["orientation"]=="rows" else 1
@@ -244,11 +250,11 @@ class TimeMapFilter(base.IMultiFrameFilter):
         if self.p["show_map_info"]=="frame":
             frame=buffer[-1]
             _,rs,cs=self._get_region(frame.shape)
-            out_frame=np.full(frame.shape,np.nan)
-            cutout=frame[rs[0]:rs[1],cs[0]:cs[1]]
-            out_frame[rs[0]:rs[1],cs[0]:cs[1]]=cutout
+            corners=np.column_stack([rs,cs])
+            self.change_rectangle("selection",center=corners.mean(axis=0),size=np.abs(corners[1]-corners[0]),visible=True)
             self.select_plotter("frame")
-            return out_frame
+            return frame
+        self.change_rectangle("selection",visible=False)
         self.select_plotter("map")
         axis,rs,cs=self._get_region(buffer[0].shape)
         img=np.full((self.p["length"],buffer[0].shape[1-axis]),np.nan)

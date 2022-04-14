@@ -87,6 +87,18 @@ class IFrameFilter:
                 default=list(options)[0]
         self.description["gui/parameters"].append({"name":name,"label":label,"kind":kind,"limit":limit,"fmt":fmt,"options":options or {},"default":default,"indicator":indicator})
         self.p[name]=default
+        self.rectangles={}
+    def add_linepos_parameter(self, default=(0,0)):
+        """Add a plot lines position parameter (named ``"linepos"``) which can be used to obtain current image view lines position"""
+        self.add_parameter("linepos",kind="virtual",default=default)
+    def add_rectangle(self, name, center, size, visible=False):
+        """Add a rectangle to be displayed in the image window"""
+        self.rectangles[name]={"center":center,"size":size,"visible":visible}
+    def change_rectangle(self, name, center=None, size=None, visible=None):
+        """Change rectangle parameters"""
+        for k,v in [("center",center),("size",size),("visible",visible)]:
+            if v is not None:
+                self.rectangles[name][k]=v
     def select_plotter(self, selector):
         """Select a specific plotter settings set"""
         self._plotter_selector=selector
@@ -167,6 +179,8 @@ class IFrameFilter:
             data["frame"]=frame
         if self._plotter_selector is not None:
             data["plotter/selector"]=self._plotter_selector
+        if self.rectangles:
+            data["rectangles"]=self.rectangles
         return data
 
 

@@ -62,6 +62,11 @@ class FilterPanel(widgets.QFrameContainer):
         def apply_settings(name, value):
             self.plugin.ca.set_parameter(name,value)
         self.filter_params_table.contained_value_changed.connect(apply_settings)
+        @controller.exsafe
+        def on_lines_move():
+            if self.params.v["enabled"]:
+                self.plugin.ca.set_parameter("linepos",self.plotter.plt.get_line_positions())
+        self.plotter.plt.lines_updated.connect(on_lines_move)
         self.add_spacer(20)
         self.filter_status_table=self.add_child("filter_status",widgets.ParamTable(self),gui_values_path="current_filter_status")
         self.filter_status_table.setup(add_indicator=True)
@@ -141,6 +146,12 @@ class FilterPanel(widgets.QFrameContainer):
                 self.set_aux(new_plotter,"plotter_selector",new_selector)
                 self._load_plotter_selector(new_plotter)
                 self.load_default_values(new_plotter,include=["__plotter__"])
+            new_rects=data.get("rectangles",{})
+            current_rects=self.plotter.plt.get_rectangles()
+            for n,p in new_rects.items():
+                self.plotter.plt.set_rectangle(n,center=p.get("center",(0,0)),size=p.get("size",(0,0)),visible=p.get("visible",False))
+            for n in set(current_rects)-set(new_rects):
+                self.plotter.plt.del_rectangle(n)
             if "frame" in data:
                 self.plotter.plt.set_image(data["frame"])
                 image_updated=self.plotter.plt.update_image(do_redraw=plotter_updated)
@@ -310,8 +321,9 @@ class FilterThread(controller.QTaskThread):
         self.fctl=fctl
         self.fctl.setup()
         for p in fctl.description.get("gui/parameters",[]):
-            if ("name" in p) and ("default" in p) and (not p.get("indicator",True)):
+            if ("name" in p) and ("default" in p) and (not p.get("indicator",True)) and p["default"] is not None:
                 self.fctl.set_parameter(p["name"],p["default"])
+        self.v["filter_props/parameters"]={p["name"]:p for p in fctl.description.get("gui/parameters",[]) if "name" in p}
         self.v["filter_desc"]=fctl.description
         self.single_frame=not fctl.description.get("receive_all_frames",False)
     def remove_filter(self):
@@ -319,6 +331,7 @@ class FilterThread(controller.QTaskThread):
         if self.fctl is not None:
             self.fctl.cleanup()
             self.fctl=None
+            self.v["filter_props"]=None
             self._filter_received=False
             self.v["filter_desc"]={}
     
@@ -372,7 +385,7 @@ class FilterThread(controller.QTaskThread):
         self.enabled=enabled
     def set_parameter(self, name, value):
         """The the filter parameter"""
-        if self.fctl is not None:
+        if self.fctl is not None and name in self.get_variable("filter_props/parameters",default=[]):
             self.fctl.set_parameter(name,value)
 
 
