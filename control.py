@@ -19,6 +19,9 @@ if __name__=="__main__":
     startdir=os.path.abspath(os.getcwd())
     os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
     sys.path.append(os.path.abspath("."))  # set current folder to the file location and add it to the search path
+python_folder=os.path.split(os.path.abspath(sys.executable))[0]
+pywin32_folder=os.path.join(python_folder,"Lib","site-packages","pywin32_system32")
+os.environ["PATH"]=pywin32_folder+";"+os.environ.get("PATH","")  # fix pywin32 confusion with some Anaconda installations
 
 from pylablib.core.thread import controller, synchronizing, threadprop
 from pylablib.core.gui.widgets import container, param_table
@@ -41,7 +44,12 @@ import collections
 import threading
 import subprocess
 import traceback
-import win32com.client
+try:
+    import win32com.client
+    win32com_present=True
+except ImportError:
+    win32com_present=False
+    
 
 from utils.gui import camera_control, SaveBox_ctl, ProcessingIndicator_ctl, ActivityIndicator_ctl
 from utils.gui import DisplaySettings_ctl, FramePreprocess_ctl, FrameProcess_ctl, PlotControl_ctl
@@ -288,6 +296,9 @@ class StandaloneFrame(container.QWidgetContainer):
         self.about_window.setup()
         self.about_window.show()
     def create_camera_shortcut(self):
+        if not win32com_present:
+            QtWidgets.QMessageBox.warning(self,"OS not supported","Camera shortcuts creation is supported only in Windows",QtWidgets.QMessageBox.Ok)
+            return
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,"Create camera shortcut...",filter="Shortcuts (*.lnk);;All Files (*)",
             **{qtkwargs.file_dialog_dir:os.path.expanduser("~\\Desktop")})
         if path:
@@ -606,7 +617,10 @@ class MissingSettingsFrame(param_table.ParamTable):
         if not self.selected:
             self.selected=True
             self.hide()
-            pythonexec=os.path.join(os.path.split(sys.executable)[0],"python.exe")
+            for execname in ["python.exe","python3.exe","python","python3"]: # avoid wpython
+                pythonexec=os.path.join(os.path.split(sys.executable)[0],execname)
+                if os.path.exists(pythonexec):
+                    break
             subprocess.call([pythonexec,"detect.py","--yes","--wait","--config-file",self.path])
             start_app(ask_on_no_cam=False)
 

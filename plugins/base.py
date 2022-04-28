@@ -360,11 +360,11 @@ def find_plugins(folder, root=""):
 
     Plugin class is any subclass of :cls:`IPlugin` which is not :cls:`IPlugin` itself.
     """
-    files=file_utils.list_dir_recursive(os.path.join(root,folder),file_filter=r".*\.py",visit_folder_filter=string_utils.get_string_filter(exclude="__pycache__")).files
+    files=file_utils.list_dir_recursive(os.path.join(root,folder),file_filter=r".*\.py$",visit_folder_filter=string_utils.get_string_filter(exclude="__pycache__")).files
     plugins=[]
     for f in files:
         f=os.path.join(folder,f)
-        module_name=f[:-3].replace("\\",".")
+        module_name=os.path.splitext(f)[0].replace("\\",".").replace("/",".")
         if module_name not in sys.modules:
             spec=importlib.util.spec_from_file_location(module_name,os.path.join(root,f))
             mod=importlib.util.module_from_spec(spec)

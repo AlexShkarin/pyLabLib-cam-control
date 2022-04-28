@@ -518,18 +518,17 @@ def find_filters(folder, root=""):
 
     Filter class is any subclass of :cls:`IFrameFilter` which has ``_class_name`` attribute which is not ``None``.
     """
-    files=file_utils.list_dir_recursive(os.path.join(root,folder),file_filter=r".*\.py",visit_folder_filter=string_utils.get_string_filter(exclude="__pycache__")).files
+    files=file_utils.list_dir_recursive(os.path.join(root,folder),file_filter=r".*\.py$",visit_folder_filter=string_utils.get_string_filter(exclude="__pycache__")).files
     filters=[]
     for f in files:
         f=os.path.join(folder,f)
-        module_name=f[:-3].replace("\\",".")
-        if module_name in sys.modules:
-            mod=sys.modules[module_name]
-        else:
+        module_name=os.path.splitext(f)[0].replace("\\",".").replace("/",".")
+        if module_name not in sys.modules:
             spec=importlib.util.spec_from_file_location(module_name,os.path.join(root,f))
             mod=importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
-            sys.modules[spec.name]=mod
+            sys.modules[module_name]=mod
+        mod=sys.modules[module_name]
         for v in mod.__dict__.values():
             if isinstance(v,type):
                 if issubclass(v,IFrameFilter) and getattr(v,"_class_name") is not None:

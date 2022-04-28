@@ -373,7 +373,7 @@ class TutorialBox(param_table.ParamTable):
                     "The single-shot mode first stores all the acquired data to the buffer and only after the acquisition is  done, the buffer is saved to the drive. "
                     "Since this mode can only be run for a finite time, it should only be used for extremely high data rates (>2Gb/s) to avoid saving-related lags during acquisition."),
                         ["stream_mode"]),
-                "saving_process": ("Saving issues",
+                "issues": ("Saving issues",
                     "In case any serious issues arise, they will be indicated here. ",
                         ["issues"]),
                 "received": ("Received frames",
@@ -589,7 +589,8 @@ class TutorialBox(param_table.ParamTable):
                         ["image_trigger_threshold"]),
                 "dead_time": ("Dead time",
                     ("In addition, you can also define the <b>dead time</b> for this trigger. Typically when image trigger is used, several consecutive images can trigger saving. "
-                    "To avoid multiple triggers, you can define the dead time, which is the time after the trigger during which new triggers are ignored. "
+                    "However, is the pretrigger is used, you generally do not want to trigger saving before it is completely filled. To avoid such early triggers, "
+                    "you can define the dead time, which is the time after a successful trigger during which new trigger signals are ignored. "
                     "Usually you want this time to be at least as large as the length of your video."),
                         ["dead_time"]),
                 "enable": ("Enable",
