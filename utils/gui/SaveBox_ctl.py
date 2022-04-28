@@ -100,7 +100,7 @@ class SaveBox_GUI(container.QGroupBoxContainer):
         self.params=self.add_child("params",param_table.ParamTable(self))
         self.params.setup(add_indicator=False)
         # Setup saving settings
-        default_path=os.path.expanduser("~\\Documents\\frames")
+        default_path=os.path.expanduser(os.path.join("~","Documents","frames"))
         with self.params.using_new_sublayout("save_path","hbox",location=("next",0,1,3)):
             self.params.add_text_edit("path",label="Path",value=default_path)
         @controller.exsafe
@@ -209,8 +209,8 @@ class SaveBox_GUI(container.QGroupBoxContainer):
             pathgen_kind="folder" if as_folder else "file"
             pathgen=self.cam_ctl.settings.get(("interface/datetime_path",pathgen_kind),"sfx")
             pathgen=self._path_gens.get(pathgen,pathgen)
-            date=datetime.datetime.now().strftime(r"%Y%m%d_%H%M%S")
-            name=pathgen.format(name=name,date=date)
+            date=datetime.datetime.now()
+            name=pathgen.format(name=name,date=date.strftime(r"%Y%m%d_%H%M%S"),datetime=date)
             if idx is not None:
                 name="{}_{:03d}".format(name,idx)
         elif idx is not None:

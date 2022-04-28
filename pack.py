@@ -66,6 +66,8 @@ def copy_docs(dst):
 def make_bat(dst):
     with open(os.path.join(dst,"python","local-python.bat"),"w") as f:
         f.write("set PATH=%CD%;%CD%\\Scripts;%PATH%\ncmd /k")
+    with open(os.path.join(dst,"python","run-device-server.bat"),"w") as f:
+        f.write("python.exe ..\\cam-control\\run-device-server.py")
 def make_launcher(dst, recompile=True):
     compiler=distutils.ccompiler.new_compiler()
     for fs in [["run-control-splash","icon.rc"],["run-control"],["run-detect"]]:

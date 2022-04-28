@@ -6,6 +6,8 @@ from pylablib import widgets
 import os
 
 
+class SkipParameterError(ValueError):
+    """Exception indicating that the parameter values should be skipped on saving"""
 class SettingsEditor(widgets.QWidgetContainer):
     """
     Settings editor.
@@ -112,7 +114,7 @@ class SettingsEditor(widgets.QWidgetContainer):
             default=ovals[0]
         table.add_combo_box("value/"+name,value=default,label=label,options=olabels,index_values=ovals,location=("next",1,1,2))
         description=options if description is None else description
-        self.decorate_parameter(table,name,default=default,descfunc=lambda v: description.get(v,v))
+        self.decorate_parameter(table,name,default=default,descfunc=lambda v: description.get(v,v) if v!=-1 else "N/A")
     def add_integer_parameter(self, table: widgets.ParamTable, name, label, limits=(0,None), default=0):
         """Add an integer settings parameters"""
         table.add_num_edit("value/"+name,value=default,label=label,limiter=limits+("coerce","int"),formatter="int",location=("next",1,1,2))
@@ -173,6 +175,8 @@ class SettingsEditor(widgets.QWidgetContainer):
         """Convert GUI parameter value into the settings file parameter value"""
         if name=="saving/max_queue_ram":
             return value*2**20
+        if name.startswith("interface/datetime_path/") and value==-1:
+            raise SkipParameterError
         return value
     def display_settings(self):
         """Display settings in the GUI"""
@@ -187,12 +191,15 @@ class SettingsEditor(widgets.QWidgetContainer):
         settings=self.settings.copy()
         for k,par in self.defined_settings.items():
             table,name=par
-            value=self.get_stored_parameter(name,table.v["value",name])
-            if ("enable",name) in table:
-                if table.v["enable",name]:
+            try:
+                value=self.get_stored_parameter(name,table.v["value",name])
+                if ("enable",name) in table:
+                    if table.v["enable",name]:
+                        settings[k]=value
+                    elif k in settings:
+                        del settings[k]
+                else:
                     settings[k]=value
-                elif k in settings:
-                    del settings[k]
-            else:
-                settings[k]=value
+            except SkipParameterError:
+                pass
         return settings
