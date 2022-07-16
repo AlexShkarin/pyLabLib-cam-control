@@ -57,8 +57,7 @@ class StatusCooled_GUI(Status_GUI):
         self.add_num_label("temperature_monitor",formatter=("float","auto",1,True),label="Temperature (C):")
     def show_parameters(self, params):
         super().show_parameters(params)
-        if "temperature_monitor" in params:
-            self.v["temperature_monitor"]=params["temperature_monitor"]
+        self.v["temperature_monitor"]=params.get("temperature_monitor","N/A")
 
 
 
@@ -105,7 +104,7 @@ class AndorSDK3CameraDescriptor(ICameraDescriptor):
     def make_gui_control(self, parent):
         return Settings_GUI(parent,cam_desc=self)
     def make_gui_status(self, parent):
-        return Status_GUI(parent,cam_desc=self)
+        return StatusCooled_GUI(parent,cam_desc=self)
 
 
 
@@ -121,8 +120,6 @@ class AndorSDK3ZylaCameraDescriptor(AndorSDK3CameraDescriptor):
         return "Andor Zyla"
     def make_thread(self, name):
         return AndorSDK3ZylaThread(name=name,kwargs=self.settings["params"].as_dict())
-    def make_gui_status(self, parent):
-        return StatusCooled_GUI(parent,cam_desc=self)
 
 class AndorSDK3NeoCameraDescriptor(AndorSDK3CameraDescriptor):
     _cam_kind="AndorSDK3Neo"
@@ -135,5 +132,3 @@ class AndorSDK3NeoCameraDescriptor(AndorSDK3CameraDescriptor):
         return "Andor Neo"
     def make_thread(self, name):
         return AndorSDK3NeoThread(name=name,kwargs=self.settings["params"].as_dict())
-    def make_gui_status(self, parent):
-        return StatusCooled_GUI(parent,cam_desc=self)
