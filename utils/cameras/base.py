@@ -27,6 +27,10 @@ class ICameraDescriptor:
             print("\tdisplay_name = '{}'".format(desc["display_name"]))
         print("")
     @classmethod
+    def print_skipped_camera(cls):
+        """Print information about a skipped camera"""
+        print("Skipping the camera\n")
+    @classmethod
     def print_error(cls):
         """Print an exception traceback"""
         traceback.print_exc()
@@ -74,6 +78,8 @@ class ICameraDescriptor:
             if desc is not None and desc[0] is not None:
                 if verbose: desc_cls.print_added_camera(*desc)
                 cameras[desc[0]]=desc[1]
+            else:
+                if verbose: desc_cls.print_skipped_camera()
         return cameras
     def get_kind_name(self):
         """Get user-friendly name to be displayed in the GUI"""
