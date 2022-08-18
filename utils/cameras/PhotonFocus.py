@@ -1,10 +1,13 @@
-from pylablib.devices import PhotonFocus, IMAQ, SiliconSoftware
-from pylablib.thread.devices.PhotonFocus import IMAQPhotonFocusCameraThread as BaseIMAQPhotonFocusCameraThread, SiliconSoftwarePhotonFocusCameraThread
+from pylablib.devices import PhotonFocus, IMAQ, SiliconSoftware, BitFlow
+from pylablib.thread.devices.PhotonFocus import IMAQPhotonFocusCameraThread as BaseIMAQPhotonFocusCameraThread, SiliconSoftwarePhotonFocusCameraThread, BitFlowPhotonFocusCameraThread
 from pylablib.core.thread import controller
 
 from .base import ICameraDescriptor
 from ..gui import cam_gui_parameters, cam_attributes_browser
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
+
+import glob
+import re
 
 
 
@@ -20,7 +23,7 @@ class IMAQPhotonFocusCameraThread(BaseIMAQPhotonFocusCameraThread):
 
     See :class:`GenericCameraThread`.
     """
-    def setup_task(self, imaq_name, pfcam_port, remote=None, misc=None):
+    def setup_task(self, imaq_name="img0", pfcam_port=0, remote=None, misc=None):
         self.in_trigger_src=(misc or {}).get("trigger/in/src",("ext",0))
         self.out_trigger_dst=(misc or {}).get("trigger/out/dst",("ext",0))
         self.trigger_monitors={}
@@ -188,6 +191,8 @@ class PhotonFocusIMAQCameraSettings_GUI(PhotonFocusCameraSettings_GUI):
             self.i["trigger_mode"]="ext" if parameters["trigger_mode"]=="in_ext" else "int"
 class PhotonFocusSiliconSoftwareCameraSettings_GUI(PhotonFocusCameraSettings_GUI):
     """Settings table widget for Photon Focus SiliconSoftware camera"""
+class PhotonFocusBitFlowCameraSettings_GUI(PhotonFocusCameraSettings_GUI):
+    """Settings table widget for Photon Focus BitFlow camera"""
 
 
 
@@ -347,5 +352,66 @@ class PhotonFocusSiSoCameraDescriptor(PhotonFocusCameraDescriptor):
         return SiliconSoftwarePhotonFocusCameraThread(name=name,kwargs=self.settings["params"].as_dict())
     def make_gui_control(self, parent):
         return PhotonFocusSiliconSoftwareCameraSettings_GUI(parent,cam_desc=self)
+    def make_gui_status(self, parent):
+        return PhotonFocusCameraStatus_GUI(parent,cam_desc=self)
+
+
+
+
+class PhotonFocusBitFlowCameraDescriptor(PhotonFocusCameraDescriptor):
+    _cam_kind="PhotonFocusBitFlow"
+    _expands="PhotonFocus"
+    _bitflow_interfaces=None
+    @classmethod
+    def _detect_interfaces(cls, verbose=False):
+        if cls._bitflow_interfaces is None:
+            try:
+                cls._bitflow_interfaces=BitFlow.list_cameras()
+            except (BitFlow.BitFlowError, ImportError, OSError):
+                cls._bitflow_interfaces=[]
+                if verbose: print("Error loading or running the BitFlow library: required software (BitFlow SDK and BFModule library) must be missing\n")
+        return cls._bitflow_interfaces
+    @classmethod
+    def _find_camfile(cls):
+        camfiles=glob.glob("*.bfml")
+        if not camfiles:
+            return None
+        if len(camfiles)==1:
+            return camfiles[0]
+        pp_camfiles=[f for f in camfiles if re.match(r".*PhotonFocus.*",f,flags=re.IGNORECASE)]
+        if pp_camfiles:
+            return sorted(pp_camfiles)[0]
+        return sorted(camfiles)[0]
+    @classmethod
+    def generate_description(cls, idx, cam=None, info=None):
+        bitflow_interfaces=cls._detect_interfaces(verbose=False)
+        port,cdesc=info
+        pfcam_port=(cdesc.manufacturer,cdesc.port)
+        name=PhotonFocus.query_camera_name(port)
+        cam_desc=cls.build_cam_desc({"pfcam_port":pfcam_port})
+        cam_desc["display_name"]="{} port {}".format(name,port)
+        for i,fginfo in enumerate(bitflow_interfaces):
+            try:
+                cam=PhotonFocus.PhotonFocusBitFlowCamera(bitflow_idx=fginfo.idx,pfcam_port=pfcam_port)
+            except PhotonFocus.PhotonFocusBitFlowCamera.Error:
+                continue
+            try:
+                if PhotonFocus.check_grabber_association(cam):
+                    cam_name="ppbitflow_{}".format(port)
+                    cam_desc["params/bitflow_idx"]=bitflow_interfaces.pop(i).idx
+                    camfile=cls._find_camfile()
+                    if camfile:
+                        cam_desc["params/bitflow_camfile"]=camfile
+                    return cam_name,cam_desc
+            except PhotonFocus.PhotonFocusBitFlowCamera.Error:
+                pass
+            finally:
+                cam.close()
+    def get_kind_name(self):
+        return "PhotonFocus + BitFlow"
+    def make_thread(self, name):
+        return BitFlowPhotonFocusCameraThread(name=name,kwargs=self.settings["params"].as_dict())
+    def make_gui_control(self, parent):
+        return PhotonFocusBitFlowCameraSettings_GUI(parent,cam_desc=self)
     def make_gui_status(self, parent):
         return PhotonFocusCameraStatus_GUI(parent,cam_desc=self)

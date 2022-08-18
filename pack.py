@@ -47,7 +47,7 @@ pll_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__")
 def copy_pll(dst):
     file_utils.retry_copy_dir(pll_folder,os.path.join(dst,"cam-control","pylablib"),folder_filter=pll_copy_folder_filter,file_filter=pll_copy_file_filter)
 include_plugins=["filter","server","trigger_save"]
-control_copy_file_filter=string_utils.StringFilter(include=r".*\.py|.*\.png|LICENSE|requirements.txt|icon.ico$",exclude=r"pack\.py$")
+control_copy_file_filter=string_utils.StringFilter(include=r".*\.py|.*\.png|LICENSE|requirements\.txt|icon\.ico$",exclude=r"pack\.py$")
 control_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__|\.git|\.vscode|docs|launcher")
 def copy_control(dst):
     dst_control=os.path.join(dst,"cam-control")
@@ -68,6 +68,8 @@ def make_bat(dst):
         f.write("set PATH=%CD%;%CD%\\Scripts;%PATH%\ncmd /k")
     with open(os.path.join(dst,"python","run-device-server.bat"),"w") as f:
         f.write("python.exe ..\\cam-control\\run-device-server.py")
+    with open(os.path.join(dst,"python","install-dependencies.bat"),"w") as f:
+        f.write("python.exe ..\\cam-control\\installdep.py")
 def make_launcher(dst, recompile=True):
     compiler=distutils.ccompiler.new_compiler()
     for fs in [["run-control-splash","icon.rc"],["run-control"],["run-detect"]]:

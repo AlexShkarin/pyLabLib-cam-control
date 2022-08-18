@@ -33,6 +33,14 @@ Cam-control is built using `pylablib <https://github.com/AlexShkarin/pyLabLib/>`
 - PhotonFocus: on top of IMAQ or Silicon Software requirements, it needs freely available (upon registration) `PFInstaller <https://www.photonfocus.com/support/software/>`__ software.
 - PICam (Princeton Instruments) cameras: freely available `PICam <https://www.princetoninstruments.com/products/software-family/pi-cam>`__ software.
 - PVCAM (Photometrics) cameras: freely available (upon registration) `PVCAM software <https://www.photometrics.com/support/download/pvcam>`__.
+- Basler cameras: freely available (upon registration) `Basler pylon Camera Software Suite <https://www.baslerweb.com/en/downloads/software-downloads/>`__ (the current latest version is `7.1.0 <https://www.baslerweb.com/en/downloads/software-downloads/software-pylon-7-1-0-windows/>`__).
+- BitFlow Axion frame grabbers require several steps:
+
+  - First, you need to install freely available `BitFlow SDK 6.5 <https://www.bitflow.com/downloads/bfsdk65.zip>`__, preferrably into its default folder or, at least, using the default folder name ``BitFlow SDK 6.5``.
+  - Second, you have to download manufacturer-provided `BitFlow Python 3.8 package <https://www.bitflow.com/downloads/BFPython38_Release.zip>`__, extract ``BFModule-1.0.1-cp38-cp38-win_amd64.whl`` file from there to the ``python`` folder within ``cam-control`` (it should contain files like ``python.exe``), and run ``install-dependencies.bat`` script contained in the same folder.
+  - Next, you need to specify the correct camera file for your camera using ``SysReg`` utility located in the ``Bin64`` folder of your BitFlow installation (by default, ``C:\BitFlow SDK 6.5\Bin64``).
+  - Afterwards, you should copy this camera file into the main ``cam-control`` folder (it should contain files like ``settings.cfg``). The camera file is located in ``Config\Axn`` folder within the BitFlow installation (by default, ``C:\BitFlow SDK 6.5\Config\Axn``) and has ``.bfml`` extension, e.g., ``PhotonFocus-MV1-D1024E-160-CL.bfml``.
+  - You can now search for the cameras by running either ``control.exe`` for the first time, or ``detect.exe`` at any point.
 
 .. note::
 
