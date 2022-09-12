@@ -77,19 +77,21 @@ class BonitoIMAQCameraDescriptor(ICameraDescriptor):
                 if verbose: print("Found IMAQ camera {}".format(name))
                 with IMAQ.IMAQCamera(name) as cam:
                     if not Bonito.check_grabber_association(cam):
+                        yield None,None
                         continue
                 yield None,name
             except IMAQ.IMAQError:
                 if verbose=="full": cls.print_error()
     @classmethod
     def generate_description(cls, idx, cam=None, info=None):
-        imaq_name=info
-        with Bonito.BonitoIMAQCamera(imaq_name=imaq_name) as cam:
-            device_info=cam.get_device_info()
-            cam_desc=cls.build_cam_desc(params={"imaq_name":imaq_name})
-            cam_desc["display_name"]=device_info.version.splitlines()[0]
-            cam_name="allvis_bonito_imaq_{}".format(idx)
-        return cam_name,cam_desc
+        if info:
+            imaq_name=info
+            with Bonito.BonitoIMAQCamera(imaq_name=imaq_name) as cam:
+                device_info=cam.get_device_info()
+                cam_desc=cls.build_cam_desc(params={"imaq_name":imaq_name})
+                cam_desc["display_name"]=device_info.version.splitlines()[0]
+                cam_name="allvis_bonito_imaq_{}".format(idx)
+            return cam_name,cam_desc
     def get_kind_name(self):
         return "Bonito + IMAQ"
     def make_thread(self, name):

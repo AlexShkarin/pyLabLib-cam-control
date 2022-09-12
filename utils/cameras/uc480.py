@@ -1,6 +1,5 @@
 from pylablib.devices import uc480
 from pylablib.thread.devices.uc480 import UC480CameraThread
-from pylablib.core.utils import dictionary
 
 from .base import ICameraDescriptor
 from ..gui.base_cam_ctl_gui import GenericCameraSettings_GUI, GenericCameraStatus_GUI
@@ -24,15 +23,32 @@ class PixelRateFloatGUIParameter(cam_gui_parameters.FloatGUIParameter):
             self.base.w[self.gui_name].set_limiter((rmin*self.factor,rmax*self.factor))
 
 
+class GainFloatGUIParameter(cam_gui_parameters.FloatGUIParameter):
+    """
+    Gain rate parameter.
+
+    Same as the basic floating point parameter, but automatically updates limits upon setup.
+    """
+    def __init__(self, settings, indicator=False):
+        super().__init__(settings,"master_gain","Gain",limit=(0,None),indicator=indicator,cam_name="gains",to_camera=lambda v: (v,None,None,None),from_camera=lambda v: v[0])
+    def setup(self, parameters, full_info):
+        super().setup(parameters,full_info)
+        if "max_gains" in full_info:
+            self.base.w[self.gui_name].set_limiter((1,full_info["max_gains"][0]))
+
+
+
 class Settings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"
     _frame_period_kind="value"
     def get_basic_parameters(self, name):
         if name=="pixel_rate": return PixelRateFloatGUIParameter(self,cam_range_name="pixel_rates_range")
+        if name=="gain": return GainFloatGUIParameter(self)
         return super().get_basic_parameters(name)
     def setup_settings_tables(self):
         super().setup_settings_tables()
         self.add_builtin_parameter("pixel_rate","advanced")
+        self.add_builtin_parameter("gain","advanced")
 
 class Status_GUI(GenericCameraStatus_GUI):
     def setup_status_table(self):
