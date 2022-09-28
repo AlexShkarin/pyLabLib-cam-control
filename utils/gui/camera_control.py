@@ -164,7 +164,7 @@ class GenericCameraCtl(container.QContainer):
         else:
             frame=self._last_shown_frame
         if frame is not None:
-            self.ctl.send_multicast(self.snap_save_thread,tag="frames/new/snap",value=FramesMessage([frame]))
+            self.ctl.send_multicast(self.snap_save_thread,tag="frames/new/snap",value=FramesMessage([frame],chandim=frame.ndim-2))
     @controller.exsafe
     def write_event_log(self, message):
         """Write an event to the saving event log"""
@@ -282,7 +282,7 @@ class GenericCameraCtl(container.QContainer):
         if "interface/plotter/binning/max_size" in self.settings:
             max_size=self.settings["interface/plotter/binning/max_size"]
             bin_mode=self.settings.get("interface/plotter/binning/mode","mean")
-            binning=(max(frame.shape)-1)//max_size+1
+            binning=(max(frame.shape[:2])-1)//max_size+1
             self.c["plotter_area"].set_binning(binning,binning,bin_mode,update_image=False)
         self.c["plotter_area"].set_image(frame)
         if self.c["plotter_area"].update_expected():

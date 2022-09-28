@@ -340,16 +340,16 @@ class FilterThread(controller.QTaskThread):
         if self.enabled and self.fctl is not None:
             self.frames_src.receive_message(msg)
             if self.single_frame:
-                self._receive_frames(msg.last_frame(),msg.metainfo.get("status_line"),single=True)
+                self._receive_frames(msg.last_frame(),msg.metainfo.get("status_line"),single=True,chandim=msg.mi.chandim)
             else:
-                self._receive_frames(msg.frames,msg.metainfo.get("status_line"),single=False)
+                self._receive_frames(msg.frames,msg.metainfo.get("status_line"),single=False,chandim=msg.mi.chandim)
         self._last_frame=remove_status_line(msg.last_frame(),msg.metainfo.get("status_line"),policy=self.status_line_policy,copy=True)
         self._last_frame_index=msg.last_frame_index()
-    def _receive_frames(self, frames, status_line, single=False):
+    def _receive_frames(self, frames, status_line, single=False, chandim=0):
         if single:
             frames=frames[None,:,:].copy()
         else:
-            frames=np.array(frames) if frames and frames[0].ndim==2 else np.concatenate(frames,axis=0)
+            frames=np.array(frames) if frames and frames[0].ndim==2+chandim else np.concatenate(frames,axis=0)
         frames=remove_status_line(frames,status_line,policy=self.status_line_policy,copy=False)
         self.fctl.receive_frames(frames)
         self._filter_received=True

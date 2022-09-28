@@ -173,15 +173,18 @@ class ChannelAccumulator(controller.QTaskThread):
         if self.cnt.receive_message(value):
             self.reset()
         skip_count=self.skip_count if kind=="raw" else 1
+        chandim=value.mi.chandim
         frames,indices,_=value.get_slice((-self._skip_accum)%skip_count,step=skip_count)
         self._skip_accum=(self._skip_accum+value.nframes())%skip_count
         status_line=value.metainfo.get("status_line")
         for i,f in zip(indices,frames):
-            if f.ndim==2:
+            if f.ndim==2+chandim:
                 f=f[None,...]
                 i=[i]
-            calc_roi=self.roi if (self.roi and self.roi_enabled) else image.ROI(0,f.shape[-2],0,f.shape[-1])
-            sums,area=image.get_region_sum(f,calc_roi.center(),calc_roi.size())
+            calc_roi=self.roi if (self.roi and self.roi_enabled) else image.ROI(0,f.shape[-2-chandim],0,f.shape[-1-chandim])
+            sums,area=image.get_region_sum(f,calc_roi.center(),calc_roi.size(),axis=(1,2))
+            while sums.ndim>1:
+                sums=np.mean(sums,axis=-1)
             if status_line is not None:
                 sl_roi=camera_utils.get_status_line_roi(f,status_line)
                 sl_roi=image.ROI.intersect(sl_roi,calc_roi)

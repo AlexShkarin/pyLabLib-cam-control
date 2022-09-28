@@ -126,6 +126,8 @@ class FastMovingAverageFilter(base.IRingMultiFrameFilter):
     def process_buffer(self, buffer, start, filled):
         if not filled:
             return None
+        if buffer.ndim>3:
+            return np.concatenate([self.process_buffer(buffer[...,ch],start,filled)[...,None] for ch in range(buffer.shape[-1])],axis=-1)
         return _movavg(buffer[:filled])
 
 
@@ -199,6 +201,10 @@ class FastMovingAverageSubtractionFilter(base.IRingMultiFrameFilter):
         buffer_step=value if name=="period" else None
         self.reshape_buffer(buffer_size,buffer_step)
     def process_buffer(self, buffer, start, filled):
+        if not filled:
+            return None
+        if buffer.ndim>3:
+            return np.concatenate([self.process_buffer(buffer[...,ch],start,filled)[...,None] for ch in range(buffer.shape[-1])],axis=-1)
         return _movavgsub(buffer,start)
 
 
@@ -257,7 +263,7 @@ class TimeMapFilter(base.IMultiFrameFilter):
         self.change_rectangle("selection",visible=False)
         self.select_plotter("map")
         axis,rs,cs=self._get_region(buffer[0].shape)
-        img=np.full((self.p["length"],buffer[0].shape[1-axis]),np.nan)
+        img=np.full((self.p["length"],buffer[0].shape[1-axis])+buffer[-1].shape[2:],np.nan)
         img[:len(buffer)]=np.mean(np.array(buffer)[:,rs[0]:rs[1],cs[0]:cs[1]],axis=axis+1)
         return img
 

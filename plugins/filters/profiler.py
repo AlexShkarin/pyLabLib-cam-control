@@ -19,7 +19,7 @@ class BeamProfileFilter(base.ISingleFrameFilter):
     _class_description="Beam profiler filter: averages image in strips of the given widths in vertical and horizontal directions, fits the resulting profiles to Gaussians and shows the widths"
     def setup(self):
         """Initial filter setup"""
-        super().setup()
+        super().setup(multichannel="average")
         # Setup control parameters
         self.add_parameter("x_position",label="X position",kind="int",limit=(0,None))
         self.add_parameter("y_position",label="Y position",kind="int",limit=(0,None))

@@ -194,13 +194,28 @@ class ISingleFrameFilter(IFrameFilter):
 
     Examples are frame gaussian blur (or any kind of convolution) or Fourier transform.
     """
-    def setup(self):
+    def setup(self, multichannel="split"):
         super().setup()
         self._latest_frame=None
+        if multichannel not in ["split","average","keep"]:
+            raise ValueError("unrecognzied multichannel option: {}; valid options are 'split', 'average', and 'keep'".format(multichannel))
+        self._multichannel=multichannel
     def receive_frames(self, frames):
         self._latest_frame=frames[-1].copy()
     def generate_frame(self):
-        return self.process_frame(self._latest_frame) if (self._latest_frame is not None) else None
+        if self._latest_frame is None:
+            return None
+        frame=self._latest_frame
+        if self._multichannel=="split":
+            return self._process_split_frame(frame)
+        if self._multichannel=="average":
+            while frame.ndim>2:
+                frame=frame.mean(axis=-1)
+        return self.process_frame(frame)
+    def _process_split_frame(self, frame):
+        if frame.ndim>2:
+            return np.concatenate([self._process_split_frame(frame[...,ch])[...,None] for ch in range(frame.shape[-1])],axis=-1)
+        return self.process_frame(frame)
     def process_frame(self, frame):
         """
         Process a single frame and return the result.
