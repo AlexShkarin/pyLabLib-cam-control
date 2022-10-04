@@ -560,6 +560,8 @@ class CamSelectFrame(param_table.ParamTable):
             self.selected=True
             if accepted:
                 self.settings["select_camera"]=self.v["camera"]
+                self.setEnabled(False)
+                splash.update_splash_screen(True)
                 self.camera_selected.emit()
             self.close()
 

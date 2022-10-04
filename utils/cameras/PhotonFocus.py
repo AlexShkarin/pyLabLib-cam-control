@@ -391,15 +391,15 @@ class PhotonFocusBitFlowCameraDescriptor(PhotonFocusCameraDescriptor):
         cam_desc=cls.build_cam_desc({"pfcam_port":pfcam_port})
         cam_desc["display_name"]="{} port {}".format(name,port)
         for i,fginfo in enumerate(bitflow_interfaces):
+            camfile=cls._find_camfile()
             try:
-                cam=PhotonFocus.PhotonFocusBitFlowCamera(bitflow_idx=fginfo.idx,pfcam_port=pfcam_port)
+                cam=PhotonFocus.PhotonFocusBitFlowCamera(bitflow_idx=fginfo.idx,bitflow_camfile=camfile,pfcam_port=pfcam_port)
             except PhotonFocus.PhotonFocusBitFlowCamera.Error:
                 continue
             try:
                 if PhotonFocus.check_grabber_association(cam):
                     cam_name="ppbitflow_{}".format(port)
                     cam_desc["params/bitflow_idx"]=bitflow_interfaces.pop(i).idx
-                    camfile=cls._find_camfile()
                     if camfile:
                         cam_desc["params/bitflow_camfile"]=camfile
                     return cam_name,cam_desc
