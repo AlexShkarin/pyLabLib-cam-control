@@ -3,7 +3,20 @@
 Release history
 ============================
 
-`Version 2.1.2 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.2.0/cam-control.zip>`__
+`Version 2.2.1 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.2.1/cam-control.zip>`__
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+2022-10-05
+
+* Added Basler pylon-compatible camera, BitFlow frame grabbers with PhotonFocus cameras, and support for AlliedVision Bonito cameras with National Instruments frame grabbers.
+* Added basic beam profiler filter.
+* Minor bugfixes.
+
+`Download <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.2.1/cam-control.zip>`__
+
+|
+
+`Version 2.2.0 <https://github.com/AlexShkarin/pyLabLib-cam-control/releases/download/v2.2.0/cam-control.zip>`__
 ---------------------------------------------------------------------------------------------------------------------------------------------
 
 2022-04-04
