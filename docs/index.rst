@@ -7,7 +7,7 @@ PyLabLib cam-control aims to provide a convenient interface for controlling came
 
 Features:
 
-- Communication with a variety of cameras: Andor, Hamamatsu, Thorlabs, IDS, PCO, Photometrics, Princeton Instruments, PhotonFocus with IMAQ and Silicon Software frame grabbers.
+- Communication with a variety of cameras: Andor, Hamamatsu, Thorlabs, IDS, PCO, Photometrics, Princeton Instruments, Basler, PhotonFocus with IMAQ, BitFlow, and Silicon Software frame grabbers.
 - Operating at high frame (100 kFPS) and data (1 Gb/s) rates.
 - On-line data processing and analysis: :ref:`binning <pipeline_prebinning>`, :ref:`background subtraction <pipeline_background_subtraction>`, simple built-in :ref:`image filters <advanced_filter>` (Gaussian blur, Fourier filtering), :ref:`playback slowdown <advanced_slowdown>` for fast process analysis.
 - Customization using :ref:`user-defined filters <expanding_filter>` (simple Python code operating on numpy arrays) or control from other software via a :ref:`TCP/IP interface <expanding_server>`.
