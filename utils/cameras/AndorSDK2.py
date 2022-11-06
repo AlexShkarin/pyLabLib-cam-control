@@ -11,18 +11,65 @@ class Settings_GUI(GenericCameraSettings_GUI):
     _bin_kind="both"
     _frame_period_kind="value"
 
+class HSSpeedParameter(cam_gui_parameters.EnumGUIParameter):
+    """
+    Andor SDK2 horizontal speed parameter.
+    
+    Receives possible values from the camera.
+    """
+    def __init__(self, settings):
+        super().__init__(settings,"hsspeed","Horizontal shift speed",{None:"None"})
+    def setup(self, parameters, full_info):
+        super().setup(parameters,full_info)
+        if "amp_modes" in full_info and "amp_mode" in full_info:
+            curr_mode=full_info["amp_mode"]
+            submodes=[m for m in full_info["amp_modes"] if m.channel==curr_mode.channel and m.oamp==curr_mode.oamp]
+            hsspeeds={m.hsspeed:m.hsspeed_MHz for m in submodes}
+            hsspeeds={k:"{:.1f} MHz".format(hsspeeds[k]) for k in sorted(hsspeeds)}
+            self.base.w[self.gui_name].set_options(hsspeeds,index=0)
+        else:
+            self.disable()
+class VSSpeedParameter(cam_gui_parameters.EnumGUIParameter):
+    """
+    Andor SDK2 vertical speed parameter.
+    
+    Receives possible values from the camera.
+    """
+    def __init__(self, settings):
+        super().__init__(settings,"vsspeed","Vertical shift period",{None:"None"})
+    def setup(self, parameters, full_info):
+        super().setup(parameters,full_info)
+        if "vsspeeds" in full_info:
+            vsspeeds={k:"{:.1f} us".format(v) for k,v in enumerate(full_info["vsspeeds"])}
+            self.base.w[self.gui_name].set_options(vsspeeds,index=0)
+        else:
+            self.disable()
+class PreampGainParameter(cam_gui_parameters.EnumGUIParameter):
+    """
+    Andor SDK2 preamp gain parameter.
+    
+    Receives possible values from the camera.
+    """
+    def __init__(self, settings):
+        super().__init__(settings,"preamp","Preamp gain",{None:"None"})
+    def setup(self, parameters, full_info):
+        super().setup(parameters,full_info)
+        if "amp_modes" in full_info:
+            gains={m.preamp:m.preamp_gain for m in full_info["amp_modes"]}
+            gains={k:"{:.1f}".format(gains[k]) for k in sorted(gains)}
+            self.base.w[self.gui_name].set_options(gains,index=0)
+        else:
+            self.disable()
+
 class AdvancedCameraSettings_GUI(Settings_GUI):
-    _hsspeeds=["10 MHz","5 MHz","3 MHz","1 MHz"]
-    _vsspeeds=["0.3 us","0.5 us","0.9 us","1.7 us","3.3 us"]
-    _preamps=["1","2.5","5.1"]
     _temp_params=(None,None,None)
     def get_basic_parameters(self, name):
         if name=="shutter":return cam_gui_parameters.EnumGUIParameter(self,"shutter","Shutter",
             {"open":"Opened","closed":"Closed","auto":"Auto"},default="closed",from_camera=lambda v: v[0])
         if name=="frame_transfer": return cam_gui_parameters.BoolGUIParameter(self,"frame_transfer","Frame transfer mode")
-        if name=="hsspeed": return cam_gui_parameters.EnumGUIParameter(self,"hsspeed","Horizontal shift speed",self._hsspeeds)
-        if name=="vsspeed": return cam_gui_parameters.EnumGUIParameter(self,"vsspeed","Vertical shift period",self._vsspeeds)
-        if name=="preamp": return cam_gui_parameters.EnumGUIParameter(self,"preamp","Preamp gain",self._preamps)
+        if name=="hsspeed": return HSSpeedParameter(self)
+        if name=="vsspeed": return VSSpeedParameter(self)
+        if name=="preamp": return PreampGainParameter(self)
         if name=="EMCCD_gain": return cam_gui_parameters.IntGUIParameter(self,"EMCCD_gain","EMCCD gain",limit=(0,255),
             to_camera=lambda v: (v,False), from_camera=lambda v:v[0])
         if name=="fan_mode": return cam_gui_parameters.EnumGUIParameter(self,"fan_mode","Fan",{"off":"Off","low":"Low","full":"Full"})
