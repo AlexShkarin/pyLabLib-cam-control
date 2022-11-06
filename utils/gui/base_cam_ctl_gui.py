@@ -47,11 +47,14 @@ class ICameraSettings_GUI(container.QWidgetContainer):
         self.settings_params.add_check_box("auto_apply",caption="Apply automatically",value=True)
         self.settings_params.add_button("apply","Apply")
         self.settings_params.add_button("start","Start acquisition",location=("next",0,1,1))
-        pic=QtGui.QPixmap(os.path.join(self.ctl.v["settings/runtime/root_folder"],"resources/play.png"))
-        self.settings_params.w["start"].setIcon(QtGui.QIcon(pic))
         self.settings_params.add_button("stop","Stop acquisition",location=(-1,1,1,1))
-        pic=QtGui.QPixmap(os.path.join(self.ctl.v["settings/runtime/root_folder"],"resources/stop.png"))
-        self.settings_params.w["stop"].setIcon(QtGui.QIcon(pic))
+        root_folder=self.ctl.get_variable("settings/runtime/root_folder",default="")
+        pic_path=os.path.join(root_folder,"resources/play.png")
+        if os.path.exists(pic_path):
+            self.settings_params.w["start"].setIcon(QtGui.QIcon(QtGui.QPixmap(pic_path)))
+        pic_path=os.path.join(root_folder,"resources/stop.png")
+        if os.path.exists(pic_path):
+            self.settings_params.w["stop"].setIcon(QtGui.QIcon(QtGui.QPixmap(pic_path)))
         self.settings_params.add_button("connect","Connect",location=("next",0,1,1))
         self.settings_params.add_button("disconnect","Disconnect",location=(-1,1,1,1))
         self.settings_params.vs["apply"].connect(self.cam_ctl.send_parameters)
@@ -209,6 +212,8 @@ class GenericCameraStatus_GUI(param_table.StatusTable):
         self.add_num_label("frames/fps",formatter=".2f",label="FPS:")
         self.setup_status_table()
         self.add_padding()
+    def set_all_values(self, values):
+        pass
     def setup_status_table(self):
         """Setup status table entries"""
     # Update the interface indicators according to camera parameters

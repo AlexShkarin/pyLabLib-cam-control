@@ -250,8 +250,10 @@ class StandaloneFrame(container.QWidgetContainer):
             self.params_loading_settings.add_dropdown_button("extras","Extra...",
                 options=["Tutorial","Create camera shortcut","Preferences","About"],
                 index_values=["tutorial","cam_shortcut","settings_editor","about"])
-            pic=QtGui.QPixmap(os.path.join(self.settings["runtime/root_folder"],"resources/cog.png"))
-            self.params_loading_settings.w["extras"].setIcon(QtGui.QIcon(pic))
+            root_folder=self.settings.get("runtime/root_folder",default="")
+            pic_path=os.path.join(root_folder,"resources/cog.png")
+            if os.path.exists(pic_path):
+                self.params_loading_settings.w["extras"].setIcon(QtGui.QIcon(QtGui.QPixmap(pic_path)))
         self.params_loading_settings.vs["load_settings"].connect(self.on_load_settings_button)
         self.params_loading_settings.vs["save_settings"].connect(self.on_save_settings_button)
         self.params_loading_settings.vs["extras"].connect(self.call_extra)

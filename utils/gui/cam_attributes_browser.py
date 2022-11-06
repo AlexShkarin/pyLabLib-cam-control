@@ -64,7 +64,7 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
         self._sync_values=set()
         self._error_raised=False
         self._initial_values={}
-        add_exception_hook("camera_attributes_window",self._on_error)
+        add_exception_hook("{}_camera_attributes_window".format(self.cam_ctl.cam_thread),self._on_error)
         self.activate(False)
 
     def _on_error(self):
