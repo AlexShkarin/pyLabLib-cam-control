@@ -314,6 +314,7 @@ class CamAttributesBrowser(widgets.QWidgetContainer):
             self._setup_attributes_update(True)
 
     def set_all_values(self, value):
+        value=value or {}
         try:
             self._autoset_paused=True
             super().set_all_values(value)

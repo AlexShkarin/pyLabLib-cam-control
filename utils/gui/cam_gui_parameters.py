@@ -365,7 +365,7 @@ class ROIGUIParameter(IGUIParameter):
             self.roi_ctl.set_limits(xlim=(0,hlim.max),ylim=(0,vlim.max),minsize=(hlim.min,vlim.min),maxbin=maxbin)
             self.detector_size=(hlim.max,vlim.max)
     def on_set_all_values(self, values):
-        if "select_roi" in values:
+        if values and "select_roi" in values:
             del values["select_roi"]
     def collect(self, parameters):
         xroi,yroi=self.settings.v["roi"]
