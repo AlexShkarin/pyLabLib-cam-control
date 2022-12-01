@@ -98,9 +98,11 @@ class PluginGUIManager(container.QContainer):
         for n in self._timers:
             self.stop_timer(n)
 
-    def remove_child(self, name):
+    def remove_child(self, name, clear=True):
         name=self._normalize_name(name)
-        super().remove_child(name)
+        super().remove_child(name,clear=clear)
+        if not clear:
+            return
         gui_name=self.name_prefix+name
         if gui_name in self.control_tabs.c:
             self.control_tabs.remove_tab(gui_name)
@@ -109,7 +111,7 @@ class PluginGUIManager(container.QContainer):
         if gui_name in self._container_boxes:
             box=self._container_boxes.pop(gui_name)
             self.plugin_tab.remove_layout_element(box)
-    def _add_tab(self, dst, name, caption, kind="empty", index=None, layout="vbox", **kwargs):
+    def _add_tab(self, dst, name, caption, kind="empty", index=None, layout="vbox", add_as_child=True, **kwargs):
         if isinstance(kind,QtWidgets.QWidget):
             widget=kind
         elif isinstance(kind,type) and issubclass(kind,QtWidgets.QWidget):
@@ -130,11 +132,12 @@ class PluginGUIManager(container.QContainer):
             raise ValueError("unrecognized tab kind: {}".format(kind))
         name=self._normalize_name(name)
         tab=dst.add_tab(self.name_prefix+name,caption,widget=widget,index=index,layout=layout,gui_values_path=False)
-        self.add_child(name,tab,gui_values_path=name)
+        if add_as_child:
+            self.add_child(name,tab,gui_values_path=name)
         if kind in ["params","line_plot","trace_plot","image_plot"]:
             tab.setup(**kwargs)
         return tab
-    def _add_box(self, dst, name, caption, kind="empty", layout="vbox", index=None, **kwargs):
+    def _add_box(self, dst, name, caption, kind="empty", layout="vbox", index=None, add_as_child=True, **kwargs):
         if isinstance(kind,QtWidgets.QWidget):
             widget=kind
         elif isinstance(kind,type) and issubclass(kind,QtWidgets.QWidget):
@@ -160,11 +163,12 @@ class PluginGUIManager(container.QContainer):
         else:
             box.add_child("c",widget,gui_values_path=False)
         self._container_boxes[self.name_prefix+name]=box
-        self.add_child(name,widget,gui_values_path=name)
+        if add_as_child:
+            self.add_child(name,widget,gui_values_path=name)
         if kind=="params":
             widget.setup(**kwargs)
         return widget
-    def add_control_tab(self, name, caption, kind="params", index=None, layout="vbox", **kwargs):
+    def add_control_tab(self, name, caption, kind="params", index=None, layout="vbox", add_as_child=True, **kwargs):
         """
         Add a new tab to the control (right) tab group.
 
@@ -177,8 +181,8 @@ class PluginGUIManager(container.QContainer):
             layout: if `kind` is ``"empty"``, specifies the layout of the new tab
             kwargs: keyword arguments passed to the widget ``setup`` method when ``kind=="params"``
         """
-        return self._add_tab(self.control_tabs,name,caption,kind=kind,index=index,layout=layout,**kwargs)
-    def add_plot_tab(self, name, caption, kind="image_plot", index=None, layout="vbox", **kwargs):
+        return self._add_tab(self.control_tabs,name,caption,kind=kind,index=index,layout=layout,add_as_child=add_as_child,**kwargs)
+    def add_plot_tab(self, name, caption, kind="image_plot", index=None, layout="vbox", add_as_child=True, **kwargs):
         """
         Add a new tab to the plot (left) tab group.
 
@@ -193,8 +197,8 @@ class PluginGUIManager(container.QContainer):
             layout: if `kind` is ``"empty"``, specifies the layout of the new tab
             kwargs: keyword arguments passed to the widget ``setup`` method when the new tab is a parameter table or a plotter
         """
-        return self._add_tab(self.plot_tabs,name,caption,kind=kind,index=index,layout=layout,**kwargs)
-    def add_plugin_box(self, name, caption, kind="params", layout="vbox", index=None, **kwargs):
+        return self._add_tab(self.plot_tabs,name,caption,kind=kind,index=index,layout=layout,add_as_child=add_as_child,**kwargs)
+    def add_plugin_box(self, name, caption, kind="params", layout="vbox", index=None, add_as_child=True, **kwargs):
         """
         Add a new box to the plugins tab.
 
@@ -206,7 +210,7 @@ class PluginGUIManager(container.QContainer):
             layout: if `kind` is ``"empty"``, specifies the layout of the new tab
             kwargs: keyword arguments passed to the widget ``setup`` method when ``kind=="params"``
         """
-        return self._add_box(self.plugin_tab,name,caption,kind=kind,layout=layout,index=index,**kwargs)
+        return self._add_box(self.plugin_tab,name,caption,kind=kind,layout=layout,index=index,add_as_child=add_as_child,**kwargs)
 
 
 

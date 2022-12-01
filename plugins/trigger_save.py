@@ -28,6 +28,8 @@ class TriggerSavePlugin(base.IPlugin):
         self.ctl.add_job("check_timer_trigger",self.check_timer_trigger,0.1)
         self.ctl.add_command("toggle",self.toggle)
         self.ctl.v["enabled"]=False
+        self.ctl.v["timer_trigger/period"]=None
+        self.ctl.v["timer_trigger/time_left"]=None
     
     def setup_gui(self):
         self.table=self.gui.add_plugin_box("params","Save trigger",cache_values=True)
@@ -94,14 +96,28 @@ class TriggerSavePlugin(base.IPlugin):
     def check_timer_trigger(self):
         """Check saving timer and start saving if it's passed"""
         enabled=self.table.v["enabled"]
+        period=self.table.v["period"]
         self.ctl.v["enabled"]=enabled
         if enabled and self.table.v["trigger_mode"]=="timer":
             t=time.time()
-            if not (self._saving_in_progress() or self._last_video) and (self._last_save_timer is None or t>self._last_save_timer+self.table.v["period"]):
+            saving=self._saving_in_progress()
+            if not (saving or self._last_video) and (self._last_save_timer is None or t>self._last_save_timer+period):
                 self._start_save(self.table.v["save_mode"])
                 self._last_save_timer=t
+            if not (saving or self._last_video) and self._last_save_timer is not None:
+                tleft=max(0,self._last_save_timer+period-t)
+            else:
+                tleft=0
+            self.ctl.v["timer_trigger"]={"time_left":tleft,"period":period}
+            if tleft>0:
+                self._update_trigger_status("armed, {:.0f}s / {:.0f}s left".format(tleft,period))
+            else:
+                self._update_trigger_status("armed")
         else:
+            if self.table.v["trigger_mode"]=="timer":
+                self._update_trigger_status("armed")
             self._last_save_timer=None
+            self.ctl.v["timer_trigger"]={"time_left":None,"period":period}
         self.extctls["resource_manager"].csi.update_resource("process_activity","saving/"+self.full_name,status="on" if enabled else "off")
         if self._last_video and not self._saving_in_progress():
             self.toggle(enable=False)
