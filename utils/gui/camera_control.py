@@ -40,7 +40,7 @@ class GenericCameraCtl(container.QContainer):
         self.saver=controller.sync_controller(self.save_thread,"run") if self.save_thread else None
         self.snap_saver=controller.sync_controller(self.snap_save_thread,"start") if self.snap_save_thread else None
         self.resource_manager=controller.sync_controller(self.resource_manager_thread) if self.resource_manager_thread else None
-        self.ctl.subscribe_sync(self.receive_frame,self.frame_src_thread,tags=self.frame_tag,limit_queue=1)
+        self.ctl.subscribe_sync(self.receive_frame,self.frame_src_thread,tags=self.frame_tag,limit_queue=3)
         self.ctl.subscribe_sync(lambda *args: self.recv_status_update(args[-1]),self.cam_thread,tags="status/connection")
         self.ctl.subscribe_sync(lambda src,tag,val: self.plot_control(*val),tags="image_plotter/control",limit_queue=-1)
         if self.resource_manager is not None:
@@ -303,6 +303,7 @@ class GenericCameraCtl(container.QContainer):
         return result
     def plot_control(self, comm, val):
         """Process image plotting control messages (e.g., drawing commands)"""
+        return
         if "plotter_area" not in self.c:
             return
         comm=[t for t in comm.split("/") if t]

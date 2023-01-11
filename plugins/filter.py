@@ -154,7 +154,7 @@ class FilterPanel(widgets.QFrameContainer):
                 self.plotter.plt.del_rectangle(n)
             if "frame" in data:
                 self.plotter.plt.set_image(data["frame"])
-                image_updated=self.plotter.plt.update_image(do_redraw=plotter_updated)
+                image_updated=bool(self.plotter.plt.update_image(do_redraw=plotter_updated))
             elif plotter_updated:
                 self.plotter.plt.set_image([[np.nan]])
                 self.plotter.plt.update_image(do_redraw=True)

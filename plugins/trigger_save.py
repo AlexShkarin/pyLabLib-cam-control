@@ -104,6 +104,7 @@ class TriggerSavePlugin(base.IPlugin):
             if not (saving or self._last_video) and (self._last_save_timer is None or t>self._last_save_timer+period):
                 self._start_save(self.table.v["save_mode"])
                 self._last_save_timer=t
+                saving=True
             if not (saving or self._last_video) and self._last_save_timer is not None:
                 tleft=max(0,self._last_save_timer+period-t)
             else:
