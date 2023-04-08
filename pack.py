@@ -39,10 +39,10 @@ def copy_interpreter(dst, interpreter=None):
         print("interpreter already exists")
         return
     if interpreter is None:
-        subprocess.call(["python.exe",os.path.join(portable_folder,"setup-embedded.py"),os.path.join(dst,"python"),"-r","cam-control"])
+        subprocess.call(["python.exe",os.path.join(portable_folder,"setup-embedded.py"),os.path.join(dst,"python"),"-b","*","-r","cam-control"])
     else:
         file_utils.retry_copy_dir(interpreter,os.path.join(dst,"python"))
-pll_copy_file_filter=string_utils.StringFilter(include=r".*\.py$")
+pll_copy_file_filter=string_utils.StringFilter(include=r".*\.pyd?$")
 pll_copy_folder_filter=string_utils.StringFilter(exclude=r"__pycache__")
 def copy_pll(dst):
     file_utils.retry_copy_dir(pll_folder,os.path.join(dst,"cam-control","pylablib"),folder_filter=pll_copy_folder_filter,file_filter=pll_copy_file_filter)

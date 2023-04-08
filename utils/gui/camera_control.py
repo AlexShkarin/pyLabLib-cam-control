@@ -303,7 +303,6 @@ class GenericCameraCtl(container.QContainer):
         return result
     def plot_control(self, comm, val):
         """Process image plotting control messages (e.g., drawing commands)"""
-        return
         if "plotter_area" not in self.c:
             return
         comm=[t for t in comm.split("/") if t]

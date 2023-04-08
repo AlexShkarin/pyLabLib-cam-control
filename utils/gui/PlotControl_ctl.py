@@ -5,9 +5,9 @@ from pylablib.core.thread import controller
 
 class PlotControl_GUI(container.QGroupBoxContainer):
     """
-    Filter settings controller widget.
+    Time series plot controller widget.
 
-    Controls loading and enabling filters, manages their controls.
+    Controls time series calculation, ROI, and memory size..
     """
     def setup(self, channel_accumulator_thread, plot_window, settings=None):
         super().setup(caption="Time series plot",no_margins=True)
